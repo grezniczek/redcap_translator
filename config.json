@@ -1,0 +1,48 @@
+{
+    "name": "REDCap Translator",
+    "tt_name": "module_name",
+    "namespace": "RUB\\REDCapTranslatorExternalModule",
+    "description": "A REDCap External Module facilitating localization of REDCap (Core and External Modules).",
+    "tt_description": "module_desc",
+    "documentation": "README.md",
+    "tt_documentation": "module_docs",
+    "authors": [
+        {
+            "name": "Günther Rezniczek",
+            "email": "guenther.rezniczek@rub.de",
+            "institution": "Ruhr-Universität Bochum"
+        }
+    ],
+    "framework-version": 2,
+    "permissions": [
+    ],
+    "enable-every-page-hooks-on-system-pages": false,
+    "system-settings": [
+        {
+            "key": "system_language",
+            "name": "<b>Language file:</b><br>Language file to use for this module. This setting can be overridden in the project configuration of this module",
+            "type": "dropdown",
+            "choices": [
+                { "value": "English", "name": "English" }
+            ],
+            "tt_hidden": true
+        }
+    ],
+    "project-settings": [
+        {
+            "key": "project_language",
+            "name": "<b>Language file:</b><br>Language file to use for this module in this project (leave blank for system setting to apply)",
+            "type": "dropdown",
+            "choices": [
+                { "value": "English", "name": "English" }
+            ],
+            "tt_hidden": true
+        }
+    ],
+    "compatibility": {
+        "php-version-min": "5.6.0",
+        "php-version-max": "",
+        "redcap-version-min": "8.1.0",
+        "redcap-version-max": ""
+     }
+}
