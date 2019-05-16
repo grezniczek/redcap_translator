@@ -17,6 +17,28 @@
     "permissions": [
     ],
     "enable-every-page-hooks-on-system-pages": false,
+    "links": {
+        "project": [
+           {
+              "name": "REDCap Translator",
+              "tt_name": "module_link",
+              "icon": "brick",
+              "icon_type": "png",
+              "url": "index.php",
+              "show-header-and-footer": true
+           }
+        ],
+        "control-center": [
+           {
+              "name": "REDCap Translator",
+              "tt_name": "module_link",
+              "icon": "language",
+              "icon_type": "fas",
+              "url": "index.php",
+              "show-header-and-footer": true
+           }
+        ]
+     },
     "system-settings": [
         {
             "key": "system_language",
