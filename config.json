@@ -22,8 +22,8 @@
            {
               "name": "REDCap Translator",
               "tt_name": "module_link",
-              "icon": "brick",
-              "icon_type": "png",
+              "icon": "language",
+              "icon_type": "fas",
               "url": "index.php",
               "show-header-and-footer": true
            }
