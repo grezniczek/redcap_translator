@@ -84,11 +84,11 @@ if (!defined("EM_i18n_POLYFILL_DECLARED")) {
             // Add $lang JS support, but only once.
             if (!defined("EM_LANGUAGE_SUPPORT_FOR_JS_ADDED")) {
                 define("EM_LANGUAGE_SUPPORT_FOR_JS_ADDED", true);
-                $fullLocalPath = dirname(__FILE__) . DS . "redcap-localization-helper.js";
+                $fullLocalPath = $this->module->getModulePath() . "em-i18n-polyfill" . DS . "redcap-localization-helper.js";
                 if (!file_exists($fullLocalPath)) {
                     throw new \Exception("Could not locate 'redcap-localization-helper.js'. It must be in the same directory as 'em-i18n-polyfill.php'.");
                 }
-                // Construnct path and add the filemtime to the url for cache busting.
+                // Construct path and add the filemtime to the url for cache busting.
                 clearstatcache(true, $fullLocalPath);
                 // Construct path.
                 $moduleDirName = $this->module->PREFIX."_".$this->module->VERSION;
