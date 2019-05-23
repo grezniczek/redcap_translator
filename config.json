@@ -13,7 +13,7 @@
             "institution": "Ruhr-Universität Bochum"
         }
     ],
-    "framework-version": 2,
+    "framework-version": 3,
     "permissions": [
     ],
     "enable-every-page-hooks-on-system-pages": false,
@@ -22,8 +22,7 @@
            {
               "name": "REDCap Translator",
               "tt_name": "module_link",
-              "icon": "language",
-              "icon_type": "fas",
+              "icon": "fas fa-language",
               "url": "index.php",
               "show-header-and-footer": true
            }
@@ -32,8 +31,7 @@
            {
               "name": "REDCap Translator",
               "tt_name": "module_link",
-              "icon": "language",
-              "icon_type": "fas",
+              "icon": "fas fa-language",
               "url": "index.php",
               "show-header-and-footer": true
            }
