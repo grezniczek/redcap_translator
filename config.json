@@ -34,6 +34,11 @@
     ],
     "project-settings": [
     ],
+    "auth-ajax-actions": [
+        "uploads-get-strings",
+        "uploads-get-zip",
+        "uploads-delete"
+    ],
     "compatibility": {
         "php-version-min": "7.4.0",
         "redcap-version-min": "12.4.0"

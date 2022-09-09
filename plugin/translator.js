@@ -24,12 +24,16 @@ window['REDCap']['EM']['RUB']['REDCapTranslator'] = THIS;
 /** @type REDCapTranslator_Config */
 var config;
 
+/** @type JavascriptModuleObject */
+var JSMO;
+
 /**
  * Initializes the REDCap Translator plugin page
  * @param {REDCapTranslator_Config} data 
  */
 THIS.init = function(data) {
     config = data;
+    JSMO = resolveJSMO(config.jsmoName);
 
     $(function() {
         log('Initialized.', config);
@@ -40,6 +44,7 @@ THIS.init = function(data) {
         // Uploads 
         $('div.translator-em input[name=upload-zip]').on('change', uploadZip);
 
+        renderUploadsTable();
         activateTab('uploads');
     });
 };
@@ -50,15 +55,103 @@ var currentTab = '';
 
 //#region Uploads
 
+function sortUploads() {
+    const unsorted = {};
+    for (const version of Object.keys(config.uploads)) {
+        const parts = version.split('.');
+        const numVersion = 
+            Number.parseInt(parts[0]) * 10000 +
+            Number.parseInt(parts[1]) * 100 +
+            Number.parseInt(parts[2]);
+        unsorted[numVersion] = version
+    }
+    /** @type {Array<string>} */
+    const sorted = []
+    for (const sortKey of Object.keys(unsorted).sort()) {
+        const key = unsorted[sortKey]
+        sorted.push(key)
+    }
+    return sorted
+}
+
+/**
+ * Renders the table on the 'Languages' tab.
+ */
+function renderUploadsTable() {
+    log('Updating uploads:', config.uploads);
+    const $tbody = $('div.translator-em tbody.uploads-body');
+    // Remove all rows
+    $tbody.children().remove();
+    // Create rows
+    for (const key of sortUploads()) {
+        /** @type UploadData */
+        const upload = config.uploads[key];
+        const $row = getTemplate('uploads-row');
+        $row.attr('data-version', upload.version);
+        $row.find('[data-key]').each(function() {
+            const $this = $(this);
+            const name = $this.attr('data-key');
+            if (name == undefined) return;
+            if (name == 'version') {
+                $this.text(upload.version);
+            }
+            else if (name == 'type') {
+                $this.text(upload.upgrade ? 'Upgrade' : 'Full Install');
+            }
+            else if (name == 'size') {
+                $this.text(Math.ceil(upload.size / 1024 / 1024).toFixed(1));
+            }
+        });
+        $row.find('[data-action]').attr('data-version', upload.version);
+        $tbody.append($row)
+    }
+}
+
+/**
+ * Handles actions from the Uploads table
+ * @param {string} action 
+ * @param {string} version 
+ */
+function handleUploadsAction(action, version) {
+    log('Uploads action:', action, version);
+    switch(action) {
+        case 'uploads-delete':
+            JSMO.ajax(action, version)
+            .then(function(response) {
+                if (response.success) {
+                    delete config.uploads[version];
+                    renderUploadsTable();
+                    showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
+                }
+            })
+            .catch(function(err) {
+                showToast('#translator-errorToast', 'Failed to delete version \'' + version + '\'. Check the console for details.');
+                error('Failed to delete version \'' + version + '\':', err);
+            });
+        break;
+        case 'uploads-get-zip':
+        case 'uploads-get-strings':
+            const url = new URL(config.downloadUrl);
+            url.searchParams.append('mode', action.replace('uploads-get-', ''));
+            url.searchParams.append('version', version);
+            log('Requestiong download from:',url);
+            showToast('#translator-successToast', 'Initiated download of version \'' + version + '\' ZIP file. The download should start momentarily.');
+            // @ts-ignore
+            window.location = url;
+        break;
+    }
+}
+
 /**
  * Uploads a ZIP file.
  * @param {JQuery.TriggeredEvent} event
  */
- function uploadZip(event) {
+function uploadZip(event) {
     const $file = $('div.translator-em input[name=upload-zip]');
     const $filename = $('div.translator-em label[for=upload-zip] span.filename');
     const $spinner = $('div.translator-em label[for=upload-zip] .processing-file');
     const $progress = $('div.translator-em label[for=upload-zip] [data-upload-progress]');
+    const $invalid = $('div.translator-em div.invalid-feedback');
     $filename.html('Choose or drop ZIP file&hellip;');
     $file.removeClass('is-valid').removeClass('is-invalid');
     $spinner.addClass('hide');
@@ -71,6 +164,7 @@ var currentTab = '';
         if (!regex.test(file.name)) {
             $file.addClass('is-invalid');
             event.target.setCustomValidity('Invalid');
+            $invalid.text('This is not a valid REDCap package.');
         }
         else {
             $file.removeClass('is-valid').addClass('is-valid');
@@ -83,32 +177,42 @@ var currentTab = '';
                 type: "POST",
                 url: config.uploadUrl,
                 xhr: function () {
-                    const myXhr = $.ajaxSettings.xhr();
-                    if (myXhr.upload) {
-                        myXhr.upload.addEventListener('progress', function(e) {
+                    const xhr = new XMLHttpRequest();
+                    if (xhr.upload) {
+                        xhr.upload.addEventListener('progress', function(e) {
                             let percent = 0;
-                            const position = e.loaded || e.position;
-                            const total = e.total;
                             if (e.lengthComputable) {
-                                percent = Math.ceil(position / total * 100);
+                                percent = Math.ceil(e.loaded / e.total * 100);
                             }
                             $progress.text(percent.toString());
-                            log('Progress', e);
                         }, false);
                     }
-                    return myXhr;
+                    return xhr;
                 },
-                success: function (data) {
+                success: function (response) {
                     $spinner.addClass('hide');
-                    showToast('#translator-successToast', 'File has been uploaded.');
-                    log('Success', data);
-                    // your callback here
+                    const data = JSON.parse(response)
+                    if (data.success) {
+                        showToast('#translator-successToast', 'File has been uploaded.');
+                        log('File upload succeeded:', data);
+                        config.uploads[data.version] = {
+                            version: data.version,
+                            upgrade: data.upgrade,
+                            size: data.size,
+                        };
+                        renderUploadsTable();
+                    }
+                    else {
+                        $file.addClass('is-invalid').removeClass('is-valid');
+                        event.target.setCustomValidity('Invalid');
+                        $invalid.text(data.error);
+                        error('File upload failed: ' + data.error);
+                    }
                 },
                 error: function (err) {
                     $spinner.addClass('hide');
                     showToast('#translator-errorToast', 'Failed to upload the file. See console for details.');
                     error('Error', err);
-                    // handle error
                 },
                 async: true,
                 data: formData,
@@ -128,7 +232,7 @@ var currentTab = '';
  * Handles actions (mouse clicks on links, buttons)
  * @param {JQuery.TriggeredEvent} event 
  */
- function handleActions(event) {
+function handleActions(event) {
     var $source = $(event.target)
     var action = $source.attr('data-action')
     if (!action) {
@@ -136,15 +240,16 @@ var currentTab = '';
         action = $source.attr('data-action')
     }
     if (!action || $source.prop('disabled')) return
-
-    log('Handling action "' + action + '" from:', $source)
-
     switch (action) {
         case 'main-nav':
             var target = $source.attr('data-nav-target') ?? ''
             activateTab(target)
             break;
-
+        case 'uploads-get-strings':
+        case 'uploads-get-zip':
+        case 'uploads-delete':
+            handleUploadsAction(action, ($source.attr('data-version') ?? '').toString());
+            break;
         // ???
         default:
             warn('Unknown action: ' + action)
@@ -157,7 +262,7 @@ var currentTab = '';
  * Switches between main tabs.
  * @param {string} tab The name of the tab to navigate to
  */
- function activateTab(tab) {
+function activateTab(tab) {
     currentTab = tab;
     log('Activating tab: ' + tab);
     $('a[data-nav-target]').parent().removeClass('active')
@@ -255,15 +360,37 @@ function log_print(ln, mode, args) {
  * @param {string} selector 
  * @param {string} msg 
  */
- function showToast(selector, msg) {
+function showToast(selector, msg) {
     const $toast = $(selector)
-    log('Toast', $toast)
     $toast.find('[data-content=toast]').html(msg)
     // @ts-ignore
     $toast.toast('show')
 }
 
+/**
+ * Gets a template by name and returns its jQuery representation
+ * @param {string} name 
+ * @returns {JQuery<HTMLElement>}
+ */
+function getTemplate(name) {
+    var $tpl = $($('[data-template="' + name + '"]').html())
+    return $tpl
+}
 
+/**
+ * 
+ * @param {string} name 
+ * @returns {JavascriptModuleObject}
+ */
+function resolveJSMO(name) {
+    const parts = name.split('.');
+    let jsmo;
+    jsmo = window;
+    for (const part of parts) {
+        jsmo = jsmo[part];
+    }
+    return jsmo;
+}
 
 
 })();

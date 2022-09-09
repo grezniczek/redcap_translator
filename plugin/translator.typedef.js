@@ -11,9 +11,20 @@
  * @typedef REDCapTranslator_Config
  * @type {{
  *  debug: boolean
- *  JSMO: JavascriptModuleObject
+ *  jsmoName: string
  *  uploadUrl: string
+ *  downloadUrl: string,
  *  csrfToken: string
+ *  uploads: object<string,UploadData>
+ * }}
+ */
+
+/**
+ * @typedef UploadData
+ * @type {{
+ *  version: string
+ *  upgrade: boolean
+ *  size: Number
  * }}
  */
 

@@ -1,29 +1,60 @@
 <?php namespace RUB\REDCapTranslatorExternalModule;
 
+/**
+ * Using a class here to isolate from the nasty global context
+ */
 class REDCapTranslatorPlugin {
+
+    /**
+     * @var REDCapTranslatorExternalModule
+     */
+    private static $m;
 
     /**
      * @param REDCapTranslatorExternalModule $m 
      * @return void 
      */
-    static function run($m) {
+    static function init($m) {
+        self::$m = $m;
         $m->initializeJavascriptModuleObject();
         $m->ih->css("plugin/translator.css");
         $m->ih->js("plugin/translator.js");
+    }
+
+    static function get_settings() {
+        // Prepare initialization object
         $settings = array(
             "debug" => true,
-            "JSMO" => json_encode($m->getJavascriptModuleObjectName()),
-            "uploadUrl" => $m->getUrl("plugin/upload.php"),
-            "csrfToken" => $m->getCSRFToken(),
+            "jsmoName" => self::$m->getJavascriptModuleObjectName(),
+            "uploadUrl" => self::$m->getUrl("plugin/upload.php"),
+            "downloadUrl" => self::$m->getUrl("plugin/download.php"),
+            "csrfToken" => self::$m->getCSRFToken(),
         );
+        // Uploads
+        $uploads = [];
+        $edocs = self::$m->getSystemSetting(REDCapTranslatorExternalModule::UPLOADS_SETTING_NAME);
+        foreach ($edocs as $version => $edoc_id) {
+            list($name, $size) = \Files::getEdocNameAndSize($edoc_id);
+            $uploads[$version] = [
+                "version" => $version,
+                "size" => $size * 1,
+                "upgrade" => strpos($name, "_upgrade") > 0,
+            ];
+        }
+        $settings["uploads"] = $uploads;
 
+        return json_encode($settings, JSON_FORCE_OBJECT);
+    }
+}
+REDCapTranslatorPlugin::init($module);
 ?>
 <div class="translator-em">
     <h4 style="margin-top:0;">REDCap Translator</h4>
+    <?php #region Navigation ?>
     <div id="sub-nav" class="d-sm-block" style="margin-bottom:0.5em !important;">
         <ul>
             <li class="active">
-                <a href="javascript:;" data-action="main-nav" data-nav-target="info" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fa-solid fa-circle-info"></i> Info</a>
+                <a href="javascript:;" data-action="main-nav" data-nav-target="info" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-info-circle"></i> Info</a>
             </li>
             <li class="">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="translate" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-language"></i> Translate</a>
@@ -39,26 +70,34 @@ class REDCapTranslatorPlugin {
             </li>
         </ul>
     </div>
+    <?php #endregion ?>
     <div class="sub-tabs">
+        <?php #region Info ?>
         <div data-nav-tab="info">
             <p>
                 Info tab
             </p>
         </div>
+        <?php #endregion ?>
+        <?php #region Translate ?>
         <div data-nav-tab="translate" class="d-none">
             <p>
                 Translate tab
             </p>
         </div>
+        <?php #endregion ?>
+        <?php #region Tools ?>
         <div data-nav-tab="tools" class="d-none">
             <p>
                 Tools tab
             </p>
         </div>
+        <?php #endregion ?>
+        <?php #region Uploads ?>
         <div data-nav-tab="uploads" class="d-none">
             <p>
                 Upload a REDCap install or update package: <br>
-                <small><i>Note that the filename must be as downloaded from the REDCap Consortium site.</i></small>
+                <small><i>Note that the filename must be as downloaded from the REDCap Consortium site, i.e. <b>redcapX.Y.Z.zip</b> or <b>redcapX.Y.Z_upgrade.zip</b>.</i></small>
             </p>
             <form>
                 <div class="custom-file">
@@ -70,14 +109,56 @@ class REDCapTranslatorPlugin {
                     <div class="invalid-feedback">This is not a valid REDCap package.</div>
                 </div>
             </form>
+            <p>
+                Available REDCap packages:
+            </p>
+            <table class="table table-responsive table-md">
+                <thead>
+                    <tr>
+                        <th scope="col">REDCap</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Size (MB)</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="uploads-body"></tbody>
+            </table>
+            <template data-template="uploads-row">
+                <tr data-version="">
+                    <th scope="row">
+                        <div class="text-cell">
+                            <span data-key="version"></span>
+                        </div>
+                    </th>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="type"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="size"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <button data-action="uploads-get-strings" class="btn btn-light btn-sm" title="Get English.ini from this version (including EM strings)"><i class="fas fa-file-alt"></i></button>
+                        <button data-action="uploads-get-zip" class="btn btn-light btn-sm" title="Download ZIP file"><i class="fas fa-file-archive"></i></button>
+                        |
+                        <button data-action="uploads-delete" class="btn btn-light btn-sm" title="Delete this version from the server"><i class="far fa-trash-alt text-danger"></i></button>
+                    </td>
+                </tr>
+            </template>
         </div>
+        <?php #endregion ?>
+        <?php #region Settings ?>
         <div data-nav-tab="settings" class="d-none">
             <p>
                 Settings tab
             </p>
         </div>
-    
+        <?php #endregion ?>
     </div>
+    <?php #region Misc ?>
     <!-- Success toast -->
     <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 99999; right: 0; bottom: 0;">
         <div id="translator-successToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000" data-animation="true" data-autohide="true">
@@ -104,11 +185,8 @@ class REDCapTranslatorPlugin {
             <div class="toast-body" data-content="toast"></div>
         </div>
     </div>
+    <?php #endregion ?>
 </div>
 <script>
-    window.REDCap.EM.RUB.REDCapTranslator.init(<?=json_encode($settings, JSON_FORCE_OBJECT)?>);
+    window.REDCap.EM.RUB.REDCapTranslator.init(<?=REDCapTranslatorPlugin::get_settings()?>);
 </script>
-<?php
-    }
-}
-REDCapTranslatorPlugin::run($module);

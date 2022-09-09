@@ -2,3 +2,8 @@
     clear: both;
     padding-top: 0.5em;
 }
+
+.translator-em .text-cell {
+    height: 2em;
+    padding-top: 0.35em;
+}
