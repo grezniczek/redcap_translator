@@ -141,7 +141,7 @@ REDCapTranslatorPlugin::init($module);
                         </div>
                     </td>
                     <td>
-                        <button data-action="uploads-get-strings" class="btn btn-light btn-sm" title="Get English.ini from this version (including EM strings)"><i class="fas fa-file-alt"></i></button>
+                        <button data-action="uploads-get-strings" class="btn btn-light btn-sm" title="Get English.ini from this version (including EM strings)"><i class="fas fa-file-alt text-info"></i></button>
                         <button data-action="uploads-get-zip" class="btn btn-light btn-sm" title="Download ZIP file"><i class="fas fa-file-archive"></i></button>
                         |
                         <button data-action="uploads-delete" class="btn btn-light btn-sm" title="Delete this version from the server"><i class="far fa-trash-alt text-danger"></i></button>
