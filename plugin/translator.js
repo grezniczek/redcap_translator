@@ -3,6 +3,8 @@
 // @ts-check
 ;(function() {
 
+//#region Variables and Initialization
+
 if (typeof window['REDCap'] == 'undefined') {
     window['REDCap'] = {
         EM: {}
@@ -51,7 +53,7 @@ THIS.init = function(data) {
 
 var currentTab = '';
 
-
+//#endregion
 
 //#region Uploads
 
@@ -99,7 +101,7 @@ function renderUploadsTable() {
                 $this.text(upload.upgrade ? 'Upgrade' : 'Full Install');
             }
             else if (name == 'size') {
-                $this.text(Math.ceil(upload.size / 1024 / 1024).toFixed(1));
+                $this.html((upload.size / 1024 / 1024).toFixed(1) + 'M');
             }
         });
         $row.find('[data-action]').attr('data-version', upload.version);
@@ -228,6 +230,8 @@ function uploadZip(event) {
 
 //#endregion
 
+//#region Navigation and Actions
+
 /**
  * Handles actions (mouse clicks on links, buttons)
  * @param {JQuery.TriggeredEvent} event 
@@ -271,10 +275,9 @@ function activateTab(tab) {
     $('div[data-nav-tab="' + tab + '"]').removeClass('d-none')
 }
 
+//#endregion
 
-
-
-//#region -- Debug Logging
+//#region Debug Logging
 
 /**
  * Logs a message to the console when in debug mode
@@ -355,6 +358,8 @@ function log_print(ln, mode, args) {
 
 //#endregion
 
+//#region Helpers
+
 /**
  * Shows a message in a toast
  * @param {string} selector 
@@ -392,5 +397,6 @@ function resolveJSMO(name) {
     return jsmo;
 }
 
+//#endregion
 
 })();

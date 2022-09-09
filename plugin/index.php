@@ -117,7 +117,7 @@ REDCapTranslatorPlugin::init($module);
                     <tr>
                         <th scope="col">REDCap</th>
                         <th scope="col">Type</th>
-                        <th scope="col">Size (MB)</th>
+                        <th scope="col">Size</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
