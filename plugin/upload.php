@@ -24,6 +24,14 @@ class REDCapZipUploader {
                 "error" => "This version has already been uploaded (full install or upgrade). To replace, first delete the existing version."
             ];
         }
+        $zip = new \ZipArchive();
+        if(($code = $zip->open($file["tmp_name"])) !== true) {
+            return [
+                "success" => false,
+                "error" => "This appears to not be a valid ZIP archive ($code). Try downloading this file from its original source."
+            ];
+        }
+        $zip->close();
         $edoc_id = \Files::uploadFile($file, null);
         if (!$edoc_id) {
             return [
@@ -45,4 +53,12 @@ class REDCapZipUploader {
         ];
     }
 }
-print json_encode(REDCapZipUploader::upload($module), JSON_FORCE_OBJECT);
+try {
+    print json_encode(REDCapZipUploader::upload($module), JSON_FORCE_OBJECT);
+}
+catch (\Throwable $t) {
+    print json_encode(array(
+        "success" => false,
+        "error" => "An unexpected error occured: ".$t->getMessage()
+    ), JSON_FORCE_OBJECT);
+}

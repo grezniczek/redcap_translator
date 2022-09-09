@@ -64,8 +64,44 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 ];
             }
         }
+    }
 
 
+
+    public static function get_strings_from_zip($edoc_id, $version) {
+        $strings = null;
+        // Copy archive to local temp
+        $local_file = \Files::copyEdocToTemp($edoc_id);
+        // Extract and merge languages
+        $zip = new \ZipArchive;
+        $result = $zip->open($local_file);
+        if ($result === true) {
+            $rc_strings = self::read_ini($zip, "redcap/redcap_v$version/LanguageUpdater/English.ini");
+            $em_strings = self::read_ini($zip, "redcap/redcap_v$version/ExternalModules/classes/English.ini");
+            $strings = array_merge($rc_strings, $em_strings);
+            $zip->close();
+        }
+        // Delete the archive
+        unlink($local_file);
+        return $strings;
+    }
+
+    public static function strings_to_ini($strings, $header = "") {
+        $lines = empty($header) ? [] : ["$header"];
+        foreach ($strings as $key => $text) {
+            $lines[] = $key . ' = "' . str_replace(array('"',"\r\n","\r","\n","\t","  ","  "), array('\"',' ',' ',' ',' ',' ',' '), $text) . '"';
+        }
+        return join("\n", $lines);
+    }
+
+    private static function read_ini($zip, $path) {
+        $contents = "";
+        $fp = $zip->getStream($path);
+        while (!feof($fp)) {
+            $contents .= fread($fp, 2);
+        }
+        fclose($fp);
+        return parse_ini_string($contents);
     }
 
 }
