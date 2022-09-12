@@ -45,9 +45,13 @@ THIS.init = function(data) {
         $('div.translator-em').on('click', handleActions);
         // Uploads 
         $('div.translator-em input[name=upload-zip]').on('change', uploadZip);
+        // Settings
+        $('div.translator-em [data-type="setting"]').on('change', updateSetting);
+        
 
-        renderUploadsTable();
-        activateTab('uploads');
+        renderUploadsTab();
+        renderSettingsTab();
+        activateTab('settings');
     });
 };
 
@@ -79,7 +83,7 @@ function sortUploads() {
 /**
  * Renders the table on the 'Languages' tab.
  */
-function renderUploadsTable() {
+function renderUploadsTab() {
     log('Updating uploads:', config.uploads);
     const $tbody = $('div.translator-em tbody.uploads-body');
     // Remove all rows
@@ -122,7 +126,7 @@ function handleUploadsAction(action, version) {
             .then(function(response) {
                 if (response.success) {
                     delete config.uploads[version];
-                    renderUploadsTable();
+                    renderUploadsTab();
                     showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
                 }
             })
@@ -202,7 +206,7 @@ function uploadZip(event) {
                             upgrade: data.upgrade,
                             size: data.size,
                         };
-                        renderUploadsTable();
+                        renderUploadsTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -226,6 +230,54 @@ function uploadZip(event) {
 
         }
     }
+}
+
+//#endregion
+
+//#region Settings
+
+/**
+ * Handles actions (mouse clicks on links, buttons)
+ * @param {JQuery.TriggeredEvent} event 
+ */
+function updateSetting(event) {
+    const $el = $(event.target);
+    const setting = $el.attr('data-setting');
+    const val = $el.prop('checked');
+    switch (setting) {
+        case 'debug': {
+            JSMO.ajax('settings-update', { setting: setting, value: val })
+            .then(function(data) {
+                if (data.success) {
+                    showToast('#translator-successToast', 'The setting has been updated.');
+                    config.debug = true;
+                    log('Setting update succeeded:', data);
+                    config.debug = val;
+                }
+                else {
+                    showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
+                    error('Failed to update setting \'' + setting + '\': ' + data.error);
+                    $el.prop('checked', config.debug);
+                }
+
+            })
+            .catch(function(err) {
+                showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
+                error('Failed to update the setting \'' + setting + '\'', err);
+                $el.prop('checked', config.debug);
+            });
+        }
+        break;
+        default: {
+            warn('Unknown setting \'' + setting + '\'.', event);
+        }
+        break;
+    }
+}
+
+function renderSettingsTab() {
+    const $tab = $('div[data-nav-tab="settings"]');
+    $tab.find('input[data-setting="debug"]').prop('checked', config.debug);
 }
 
 //#endregion
@@ -312,7 +364,6 @@ function warn() {
  * Logs an error to the console when in debug mode
  */
 function error() {
-    if (!config.debug) return
     let ln = '??'
     try {
         const line = ((new Error).stack ?? '').split('\n')[2]

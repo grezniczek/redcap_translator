@@ -24,11 +24,12 @@ class REDCapTranslatorPlugin {
     static function get_settings() {
         // Prepare initialization object
         $settings = array(
-            "debug" => true,
+            "debug" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
             "jsmoName" => self::$m->getJavascriptModuleObjectName(),
             "uploadUrl" => self::$m->getUrl("plugin/upload.php"),
             "downloadUrl" => self::$m->getUrl("plugin/download.php"),
             "csrfToken" => self::$m->getCSRFToken(),
+            "invisibleChar" => REDCapTranslatorExternalModule::INVISIBLE_CHAR,
         );
         // Uploads
         $uploads = [];
@@ -155,6 +156,17 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 Settings tab
             </p>
+            <div class="em-option">
+                <p class="em-description">
+                    <label for="switch-debug">
+                        <span class="switch switch-xs switch-inline">
+                            <input type="checkbox" class="switch" data-type="setting" data-setting="debug" id="switch-debug">
+                            <label for="switch-debug"></label>
+                        </span>
+                        Debug mode (status messages will be output to the browser console)
+                    </label>
+                </p>
+            </div>
         </div>
         <?php #endregion ?>
     </div>

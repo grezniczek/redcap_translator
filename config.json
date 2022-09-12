@@ -37,7 +37,8 @@
     "auth-ajax-actions": [
         "uploads-get-strings",
         "uploads-get-zip",
-        "uploads-delete"
+        "uploads-delete",
+        "settings-update"
     ],
     "compatibility": {
         "php-version-min": "7.4.0",
