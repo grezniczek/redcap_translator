@@ -1,9 +1,12 @@
-<?php namespace RUB\REDCapTranslatorExternalModule;
+<?php
+
+namespace RUB\REDCapTranslatorExternalModule;
 
 /**
  * Using a class here to isolate from the nasty global context
  */
-class REDCapTranslatorPlugin {
+class REDCapTranslatorPlugin
+{
 
     /**
      * @var REDCapTranslatorExternalModule
@@ -14,14 +17,16 @@ class REDCapTranslatorPlugin {
      * @param REDCapTranslatorExternalModule $m 
      * @return void 
      */
-    static function init($m) {
+    static function init($m)
+    {
         self::$m = $m;
         $m->initializeJavascriptModuleObject();
         $m->ih->css("plugin/translator.css");
         $m->ih->js("plugin/translator.js");
     }
 
-    static function get_settings() {
+    static function get_settings()
+    {
         // Prepare initialization object
         $settings = array(
             "debug" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
@@ -30,6 +35,7 @@ class REDCapTranslatorPlugin {
             "downloadUrl" => self::$m->getUrl("plugin/download.php"),
             "csrfToken" => self::$m->getCSRFToken(),
             "invisibleChar" => REDCapTranslatorExternalModule::INVISIBLE_CHAR,
+            "uploadedVersions" => self::$m->get_uploaded_versions(),
         );
         // Uploads
         $uploads = [];
@@ -50,8 +56,9 @@ class REDCapTranslatorPlugin {
 REDCapTranslatorPlugin::init($module);
 ?>
 <div class="translator-em">
-    <h4 style="margin-top:0;">REDCap Translator</h4>
-    <?php #region Navigation ?>
+    <h4 style="margin-top:0;">REDCap Translation Assistant</h4>
+    <?php #region Navigation 
+    ?>
     <div id="sub-nav" class="d-sm-block" style="margin-bottom:0.5em !important;">
         <ul>
             <li class="active">
@@ -71,30 +78,64 @@ REDCapTranslatorPlugin::init($module);
             </li>
         </ul>
     </div>
-    <?php #endregion ?>
+    <?php #endregion 
+    ?>
     <div class="sub-tabs">
-        <?php #region Info ?>
+        <?php #region Info 
+        ?>
         <div data-nav-tab="info">
             <p>
                 Info tab
             </p>
         </div>
-        <?php #endregion ?>
-        <?php #region Translate ?>
+        <?php #endregion 
+        ?>
+        <?php #region Translate 
+        ?>
         <div data-nav-tab="translate" class="d-none">
             <p>
                 Translate tab
             </p>
         </div>
-        <?php #endregion ?>
-        <?php #region Tools ?>
+        <?php #endregion 
+        ?>
+        <?php #region Tools 
+        ?>
         <div data-nav-tab="tools" class="d-none">
             <p>
-                Tools tab
+                On this tab, ...
             </p>
+            <p>Output should be based on REDCap version:</p>
+            <p class="">
+                <select data-em-para="based-on"></select>
+            </p>
+            <hr>
+            <h2>Generate a REDCap Strings Metadata file</h2>
+            <p>
+                More stuff for JSON generation...
+            </p>
+            <div class="form-row align-items-center">
+                <div class="col-auto">
+                    <button data-action="gen-json" class="btn btn-primary btn-sm mb-2"><i class="fas fa-file-code"></i> Generate</button>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="gen-json-code" data-em-para="gen-json-with-code">
+                        <label class="form-check-label" for="gen-json-code">Add code locations</label>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="gen-json-code-brute" data-em-para="gen-json-with-code-brute">
+                        <label class="form-check-label" for="gen-json-code-brute">thoroughly (this is slow)</label>
+                    </div>
+                </div>
+            </div>
         </div>
-        <?php #endregion ?>
-        <?php #region Uploads ?>
+        <?php #endregion 
+        ?>
+        <?php #region Uploads 
+        ?>
         <div data-nav-tab="uploads" class="d-none">
             <p>
                 Upload a REDCap install or update package: <br>
@@ -150,8 +191,10 @@ REDCapTranslatorPlugin::init($module);
                 </tr>
             </template>
         </div>
-        <?php #endregion ?>
-        <?php #region Settings ?>
+        <?php #endregion 
+        ?>
+        <?php #region Settings 
+        ?>
         <div data-nav-tab="settings" class="d-none">
             <p>
                 Settings tab
@@ -168,14 +211,18 @@ REDCapTranslatorPlugin::init($module);
                 </p>
             </div>
         </div>
-        <?php #endregion ?>
+        <?php #endregion 
+        ?>
     </div>
-    <?php #region Misc ?>
+    <?php #region Misc 
+    ?>
     <!-- Success toast -->
     <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 99999; right: 0; bottom: 0;">
         <div id="translator-successToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000" data-animation="true" data-autohide="true">
             <div class="toast-header">
-                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="#28a745"></rect></svg>
+                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false">
+                    <rect width="100%" height="100%" fill="#28a745"></rect>
+                </svg>
                 <strong class="mr-auto">Success</strong>
                 <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -188,7 +235,9 @@ REDCapTranslatorPlugin::init($module);
     <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 99999; right: 0; bottom: 0;">
         <div id="translator-errorToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000" data-animation="true" data-autohide="false">
             <div class="toast-header">
-                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false"><rect width="100%" height="100%" fill="#dc3545"></rect></svg>
+                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false">
+                    <rect width="100%" height="100%" fill="#dc3545"></rect>
+                </svg>
                 <strong class="mr-auto">ERROR</strong>
                 <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -197,8 +246,9 @@ REDCapTranslatorPlugin::init($module);
             <div class="toast-body" data-content="toast"></div>
         </div>
     </div>
-    <?php #endregion ?>
+    <?php #endregion 
+    ?>
 </div>
 <script>
-    window.REDCap.EM.RUB.REDCapTranslator.init(<?=REDCapTranslatorPlugin::get_settings()?>);
+    window.REDCap.EM.RUB.REDCapTranslator.init(<?= REDCapTranslatorPlugin::get_settings() ?>);
 </script>

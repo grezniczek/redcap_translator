@@ -49,13 +49,49 @@ THIS.init = function(data) {
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
         
 
+        renderToolsTab();
         renderUploadsTab();
         renderSettingsTab();
-        activateTab('settings');
+        activateTab('tools');
     });
 };
 
 var currentTab = '';
+
+//#endregion
+
+//#region Tools
+
+function renderToolsTab() {
+    // Versions
+    const $versions = $('[data-nav-tab="tools"] select[data-em-para="based-on"]');
+    for (const key in config.uploadedVersions) {
+        const $opt = $('<option></option>');
+        $opt.prop('selected', key == 'current');
+        $opt.val(key);
+        $opt.text(config.uploadedVersions[key]);
+        $versions.append($opt);
+    }
+    // @ts-ignore
+    $versions.select2();
+}
+
+function handleToolsAction(action) {
+    if (action == 'gen-json') {
+        const basedOn = ($('[data-nav-tab="tools"] select[data-em-para="based-on"]').val() ?? '').toString();
+        const withCode = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code"]').prop('checked') == true;
+        const withCodeBrute = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code-brute"]').prop('checked') == true;
+        const url = new URL(config.downloadUrl);
+        url.searchParams.append('mode', 'json');
+        url.searchParams.append('version', basedOn);
+        url.searchParams.append('code', withCode ? '1' : '0');
+        url.searchParams.append('brute', withCodeBrute ? '1' : '0');
+        log('Requestiong download from:',url);
+        showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
+        // @ts-ignore
+        window.location = url;
+    }
+}
 
 //#endregion
 
@@ -305,6 +341,9 @@ function handleActions(event) {
         case 'uploads-get-zip':
         case 'uploads-delete':
             handleUploadsAction(action, ($source.attr('data-version') ?? '').toString());
+            break;
+        case 'gen-json':
+            handleToolsAction(action);
             break;
         // ???
         default:

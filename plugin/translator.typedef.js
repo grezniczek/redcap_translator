@@ -16,6 +16,7 @@
  *  downloadUrl: string,
  *  csrfToken: string
  *  uploads: object<string,UploadData>
+ *  uploadedVersions:
  * }}
  */
 
