@@ -87,6 +87,14 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
+    public function get_state() {
+        $state = $this->getSystemSetting("state") ?? [ 
+            "counter" => 0,
+            "last-updated" => "never"
+        ];
+        return $state;
+    }
+
 
     public static function get_strings_from_zip($edoc_id, $version) {
         // Copy archive to local temp
@@ -321,5 +329,13 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
         if ($n === false) $n = 0;
         return $n;
+    }
+
+
+    function code_lens_cron($cron_info) {
+        $state = $this->get_state();
+        $state["counter"]++;
+        $state["last-updated"] = date("Y-m-d H:i:s");
+        $this->setSystemSetting("state", $state);
     }
 }

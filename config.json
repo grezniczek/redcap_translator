@@ -40,6 +40,15 @@
         "uploads-delete",
         "settings-update"
     ],
+    "crons": [
+        {
+            "cron_name": "code_lens",
+            "cron_description": "A background task that creates code annotations for a REDCap Strings Metadata file.",
+            "method": "code_lens_cron",
+            "cron_frequency": "120",
+            "cron_max_run_time": "180"
+        }
+    ],
     "compatibility": {
         "php-version-min": "7.4.0",
         "redcap-version-min": "12.4.0"

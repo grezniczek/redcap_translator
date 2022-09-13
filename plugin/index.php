@@ -36,6 +36,7 @@ class REDCapTranslatorPlugin
             "csrfToken" => self::$m->getCSRFToken(),
             "invisibleChar" => REDCapTranslatorExternalModule::INVISIBLE_CHAR,
             "uploadedVersions" => self::$m->get_uploaded_versions(),
+            "state" => self::$m->get_state(),
         );
         // Uploads
         $uploads = [];
