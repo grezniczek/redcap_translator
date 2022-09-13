@@ -54,7 +54,7 @@ class Downloader {
             // Get the strings metadata
             if ($mode == "json") {
                 $previous = null; // TODO 
-                $result = REDCapTranslatorExternalModule::generate_metadata($edoc_id, $version, $code, $brute, $previous);
+                $result = REDCapTranslatorExternalModule::generate_metadata($edoc_id, $version, $m->VERSION, $code, $brute, $previous);
                 $json_name = "REDCap_v{$version}_Strings_Metadata.json";
                 header('Content-Type: application/json; name="'.$json_name.'"');
                 header('Content-Disposition: attachment; filename="'.$json_name.'"');
