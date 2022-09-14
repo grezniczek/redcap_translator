@@ -132,6 +132,13 @@ REDCapTranslatorPlugin::init($module);
                     </div>
                 </div>
             </div>
+            <hr>
+            <h2>Generate a REDCap language file for In-Screen translation</h2>
+            <p>
+                Provide way to upload a Language.ini or Language.json file.
+                When no file is provided, English will be output.
+                
+            </p>
         </div>
         <?php #endregion 
         ?>
