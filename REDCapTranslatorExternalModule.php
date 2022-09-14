@@ -256,8 +256,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 return [ $line_number, $hash ];
             };
 
-            // Regex to find various lang string accessors - see: https://regex101.com/r/6R3tty/3
-            $re = '/((::_lang\s*\()|(\$lang\s*\[)|(\$GLOBALS\s*\[\s*(?\'q1\'[\'"])lang(?P=q1)]\s*\[)|(RCView::(tt(fy){0,1}(_[a-z0-9_]+){0,1}\())|(RCView::getLangStringByKey\s*\())\s*(?\'q2\'[\'"])(?\'key\'[a-z0-9_]+)(?P=q2)/m';
+            // Regex to find various lang string accessors - see: https://regex101.com/r/6R3tty/4
+            $re = '/((::_lang\s*\()|(\$lang\s*\[)|(\$GLOBALS\s*\[\s*(?\'q1\'[\'"])lang(?P=q1)]\s*\[)|(RCView::(tt(fy){0,1}(_[a-z0-9_]+){0,1}\())|(RCView::getLangStringByKey\s*\())\s*(?\'q2\'[\'"]{0,1})(?\'key\'[a-z0-9_]+)(?P=q2)/m';
             if (preg_match_all($re, $content, $matches, PREG_OFFSET_CAPTURE)) {
                 foreach ($matches["key"] as $match) {
                     list($key, $offset) = $match;
