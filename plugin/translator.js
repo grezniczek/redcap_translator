@@ -44,9 +44,9 @@ THIS.init = function(data) {
         // General
         $('div.translator-em').on('click', handleActions);
         // Languages 
-        $('div.translator-em input[name=upload-lang-json]').on('change', uploadLanguageJson);
+        $('div.translator-em [data-uploader="lang-json"] input[type="file"]').on('change', uploadLanguageJson);
         // Packages 
-        $('div.translator-em input[name=package-zip]').on('change', uploadZip);
+        $('div.translator-em [data-uploader="package-zip"] input[type="file"]').on('change', uploadZip);
         // Settings
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
 
@@ -114,7 +114,7 @@ function sortLanguages() {
  */
  function uploadLanguageJson(event) {
     const $uploader = $('div.translator-em [data-uploader="lang-json"]');
-    const $file = $uploader.find('input[name=package-zip]');
+    const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
     const $spinner = $uploader.find('.processing-file');
     const $progress = $uploader.find('[data-upload-progress]');
@@ -123,22 +123,21 @@ function sortLanguages() {
     $file.removeClass('is-valid').removeClass('is-invalid');
     $spinner.addClass('hide');
     const files = $file.prop('files')
-    if (files.length === 1) {
+    if (files && files.length === 1) {
         const file = files[0];
         $filename.text(file.name);
-        // REDCap install/upgrade file regex: https://regex101.com/r/QDOxi6/2
-        const regex = /^redcap(?<version>\d+\.\d+\.\d+)(_upgrade){0,1}\.zip$/gm;
+        const regex = /\.[jJ][sS][oO][nN]$/gm;
         if (!regex.test(file.name)) {
             $file.addClass('is-invalid');
             event.target.setCustomValidity('Invalid');
-            $invalid.text('This is not a valid REDCap package.');
+            $invalid.text('This is not a JSON file.');
         }
         else {
             $file.removeClass('is-valid').addClass('is-valid');
             $spinner.removeClass('hide');
             log('Uploading: "' + file.name + '"');
             const formData = new FormData();
-            formData.append("redcap_zip", file, file.name);
+            formData.append("language_json", file, file.name);
             formData.append('redcap_csrf_token', config.csrfToken);
             $.ajax({
                 type: "POST",
@@ -162,12 +161,13 @@ function sortLanguages() {
                     if (data.success) {
                         showToast('#translator-successToast', 'File has been uploaded.');
                         log('File upload succeeded:', data);
-                        config.packages[data.version] = {
-                            version: data.version,
-                            upgrade: data.upgrade,
-                            size: data.size,
+                        config.languages[data.name] = {
+                            name: data.name,
+                            'localized-name': data['localized-name'],
+                            iso: data.iso,
+                            coverage: data.coverage
                         };
-                        renderPackagesTab();
+                        renderLanguagesTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -296,7 +296,7 @@ function handlePackagesAction(action, version) {
  */
 function uploadZip(event) {
     const $uploader = $('div.translator-em [data-uploader="package-zip"]');
-    const $file = $uploader.find('input[name=package-zip]');
+    const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
     const $spinner = $uploader.find('.processing-file');
     const $progress = $uploader.find('[data-upload-progress]');
@@ -305,7 +305,7 @@ function uploadZip(event) {
     $file.removeClass('is-valid').removeClass('is-invalid');
     $spinner.addClass('hide');
     const files = $file.prop('files')
-    if (files.length === 1) {
+    if (files && files.length === 1) {
         const file = files[0];
         $filename.text(file.name);
         // REDCap install/upgrade file regex: https://regex101.com/r/QDOxi6/2

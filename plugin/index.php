@@ -113,7 +113,7 @@ REDCapTranslatorPlugin::init($module);
             </p>
             <form class="ml-2">
                 <div class="custom-file" data-uploader="lang-json">
-                    <input type="file" class="custom-file-input" name="upload-lang-json" id="upload-lang-json" accept=".json" />
+                    <input type="file" class="custom-file-input" id="upload-lang-json" accept=".json" />
                     <label class="custom-file-label" for="upload-lang-json">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
                         <span class="filename">Choose or drop JSON file&hellip;</span>
@@ -202,8 +202,8 @@ REDCapTranslatorPlugin::init($module);
             </h2>
             <form>
                 <div class="custom-file" data-uploader="package-zip">
-                    <input type="file" class="custom-file-input" name="package-zip" id="package-zip" accept=".zip" />
-                    <label class="custom-file-label" for="package-zip">
+                    <input type="file" class="custom-file-input" id="upload-package-zip" accept=".zip" />
+                    <label class="custom-file-label" for="upload-package-zip">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
                         <span class="filename">Choose or drop ZIP file&hellip;</span>
                     </label>
