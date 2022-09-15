@@ -132,12 +132,7 @@ REDCapTranslatorPlugin::init($module);
                 </div>
             </form>
             <p>
-                or <b>create</b> a new file, 
-                <div class="form-inline ml-2">
-                    <label class="mr-2" for="create-lang-based-on">based on REDCap</label>
-                    <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
-                    <span class="ml-2">and the following parameters:</span>
-                </div>
+                or <b>create</b> a new file, with the following parameters:
                 <div class="form-inline mt-2 ml-2">
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-name">Name (must be unique)</label>
@@ -157,6 +152,13 @@ REDCapTranslatorPlugin::init($module);
             <h3 class="mt-2">
                 Available languages
             </h3>
+            <p>
+                <div class="form-inline ml-2">
+                        <label class="mr-2" for="create-lang-based-on">Base actions on REDCap version </label>
+                        <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
+                        <span class="ml-2">metadata.</span>
+                </div>
+            </p>
             <table class="table table-responsive table-md">
                 <thead>
                     <tr>
