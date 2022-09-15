@@ -43,16 +43,17 @@ THIS.init = function(data) {
         // Handle actions
         // General
         $('div.translator-em').on('click', handleActions);
-        // Uploads 
-        $('div.translator-em input[name=upload-zip]').on('change', uploadZip);
+        // Packages 
+        $('div.translator-em input[name=package-zip]').on('change', uploadZip);
         // Settings
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
-        
 
+
+        renderLanguagesTab();
+        renderPackagesTab();
         renderToolsTab();
-        renderUploadsTab();
         renderSettingsTab();
-        activateTab('tools');
+        activateTab('languages');
     });
 };
 
@@ -60,109 +61,128 @@ var currentTab = '';
 
 //#endregion
 
-//#region Tools
+//#region Languages
 
-function renderToolsTab() {
+function sortLanguages() {
+    const sorted = {};
+    for (const name of Object.keys(config.languages).sort()) {
+        sorted.push(config.languages[name]);
+    }
+    return sorted;
+}
+
+/**
+ * Renders the 'Languages' tab.
+ */
+ function renderLanguagesTab() {
     // Versions
-    const $versions = $('[data-nav-tab="tools"] select[data-em-para="based-on"]');
-    for (const key in config.uploadedVersions) {
-        const $opt = $('<option></option>');
-        $opt.prop('selected', key == 'current');
-        $opt.val(key);
-        $opt.text(config.uploadedVersions[key]);
-        $versions.append($opt);
+    addVersions($('[data-nav-tab="languages"] select[data-em-para="gen-lang-basedon"]'));
+    log('Updating languages:', config.languages);
+
+    const $tbody = $('div.translator-em tbody.languages-body');
+    // Remove all rows
+    $tbody.children().remove();
+    const keys = sortLanguages();
+    if (keys.length) {
+        // Create rows
+        for (const key in sortLanguages()) {
+            /** @type LanguageData */
+            const language = config.languages[key];
+            const $row = getTemplate('languages-row');
+            $row.attr('data-name', language.name);
+            $row.find('[data-key]').each(function() {
+                const $this = $(this);
+                const name = $this.attr('data-key') ?? '';
+                if (['name','localized-name','coverage'].includes(name)) {
+                    $this.text(language[name]);
+                }
+            });
+            $row.find('[data-action]').attr('data-name', language.name);
+            $tbody.append($row)
+        }
     }
-    // @ts-ignore
-    $versions.select2();
+    else {
+        $tbody.append(getTemplate('languages-empty'));
+    }
 }
 
-function handleToolsAction(action) {
-    if (action == 'gen-json') {
-        const basedOn = ($('[data-nav-tab="tools"] select[data-em-para="based-on"]').val() ?? '').toString();
-        const withCode = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code"]').prop('checked') == true;
-        const withCodeBrute = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code-brute"]').prop('checked') == true;
-        const url = new URL(config.downloadUrl);
-        url.searchParams.append('mode', 'json');
-        url.searchParams.append('version', basedOn);
-        url.searchParams.append('code', withCode ? '1' : '0');
-        url.searchParams.append('brute', withCodeBrute ? '1' : '0');
-        log('Requestiong download from:',url);
-        showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
-        // @ts-ignore
-        window.location = url;
-    }
-}
 
 //#endregion
 
-//#region Uploads
+//#region Packages
 
-function sortUploads() {
+function sortPackages() {
     const unsorted = {};
-    for (const version of Object.keys(config.uploads)) {
+    for (const version of Object.keys(config.packages)) {
         const parts = version.split('.');
         const numVersion = 
             Number.parseInt(parts[0]) * 10000 +
             Number.parseInt(parts[1]) * 100 +
             Number.parseInt(parts[2]);
-        unsorted[numVersion] = version
+        unsorted[numVersion] = version;
     }
     /** @type {Array<string>} */
-    const sorted = []
+    const sorted = [];
     for (const sortKey of Object.keys(unsorted).sort()) {
-        const key = unsorted[sortKey]
-        sorted.push(key)
+        const key = unsorted[sortKey];
+        sorted.push(key);
     }
-    return sorted
+    return sorted;
 }
 
 /**
- * Renders the table on the 'Languages' tab.
+ * Renders the table on the 'Packages' tab.
  */
-function renderUploadsTab() {
-    log('Updating uploads:', config.uploads);
-    const $tbody = $('div.translator-em tbody.uploads-body');
+function renderPackagesTab() {
+    log('Updating packages:', config.packages);
+    const $tbody = $('div.translator-em tbody.packages-body');
     // Remove all rows
     $tbody.children().remove();
-    // Create rows
-    for (const key of sortUploads()) {
-        /** @type UploadData */
-        const upload = config.uploads[key];
-        const $row = getTemplate('uploads-row');
-        $row.attr('data-version', upload.version);
-        $row.find('[data-key]').each(function() {
-            const $this = $(this);
-            const name = $this.attr('data-key');
-            if (name == undefined) return;
-            if (name == 'version') {
-                $this.text(upload.version);
-            }
-            else if (name == 'type') {
-                $this.text(upload.upgrade ? 'Upgrade' : 'Full Install');
-            }
-            else if (name == 'size') {
-                $this.html((upload.size / 1024 / 1024).toFixed(1) + 'M');
-            }
-        });
-        $row.find('[data-action]').attr('data-version', upload.version);
-        $tbody.append($row)
+    const keys = sortPackages();
+    if (keys.length) {
+        // Create rows
+        for (const key of sortPackages()) {
+            /** @type PackageData */
+            const package = config.packages[key];
+            const $row = getTemplate('packages-row');
+            $row.attr('data-version', package.version);
+            $row.find('[data-key]').each(function() {
+                const $this = $(this);
+                const name = $this.attr('data-key');
+                if (name == undefined) return;
+                if (name == 'version') {
+                    $this.text(package.version);
+                }
+                else if (name == 'type') {
+                    $this.text(package.upgrade ? 'Upgrade' : 'Full Install');
+                }
+                else if (name == 'size') {
+                    $this.html((package.size / 1024 / 1024).toFixed(1) + 'M');
+                }
+            });
+            $row.find('[data-action]').attr('data-version', package.version);
+            $tbody.append($row)
+        }
+    }
+    else {
+        $tbody.append(getTemplate('packages-empty'));
     }
 }
 
 /**
- * Handles actions from the Uploads table
+ * Handles actions from the Packages table
  * @param {string} action 
  * @param {string} version 
  */
-function handleUploadsAction(action, version) {
-    log('Uploads action:', action, version);
+function handlePackagesAction(action, version) {
+    log('Packages action:', action, version);
     switch(action) {
-        case 'uploads-delete':
+        case 'package-delete':
             JSMO.ajax(action, version)
             .then(function(response) {
                 if (response.success) {
-                    delete config.uploads[version];
-                    renderUploadsTab();
+                    delete config.packages[version];
+                    renderPackagesTab();
                     showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
                 }
             })
@@ -171,10 +191,10 @@ function handleUploadsAction(action, version) {
                 error('Failed to delete version \'' + version + '\':', err);
             });
         break;
-        case 'uploads-get-zip':
-        case 'uploads-get-strings':
+        case 'package-get-zip':
+        case 'package-get-strings':
             const url = new URL(config.downloadUrl);
-            url.searchParams.append('mode', action.replace('uploads-get-', ''));
+            url.searchParams.append('mode', action);
             url.searchParams.append('version', version);
             log('Requestiong download from:',url);
             showToast('#translator-successToast', 'Initiated download of version \'' + version + '\' ZIP file. The download should start momentarily.');
@@ -189,10 +209,10 @@ function handleUploadsAction(action, version) {
  * @param {JQuery.TriggeredEvent} event
  */
 function uploadZip(event) {
-    const $file = $('div.translator-em input[name=upload-zip]');
-    const $filename = $('div.translator-em label[for=upload-zip] span.filename');
-    const $spinner = $('div.translator-em label[for=upload-zip] .processing-file');
-    const $progress = $('div.translator-em label[for=upload-zip] [data-upload-progress]');
+    const $file = $('div.translator-em input[name=package-zip]');
+    const $filename = $('div.translator-em label[for=package-zip] span.filename');
+    const $spinner = $('div.translator-em label[for=package-zip] .processing-file');
+    const $progress = $('div.translator-em label[for=package-zip] [data-upload-progress]');
     const $invalid = $('div.translator-em div.invalid-feedback');
     $filename.html('Choose or drop ZIP file&hellip;');
     $file.removeClass('is-valid').removeClass('is-invalid');
@@ -237,12 +257,12 @@ function uploadZip(event) {
                     if (data.success) {
                         showToast('#translator-successToast', 'File has been uploaded.');
                         log('File upload succeeded:', data);
-                        config.uploads[data.version] = {
+                        config.packages[data.version] = {
                             version: data.version,
                             upgrade: data.upgrade,
                             size: data.size,
                         };
-                        renderUploadsTab();
+                        renderPackagesTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -265,6 +285,32 @@ function uploadZip(event) {
             });
 
         }
+    }
+}
+
+//#endregion
+
+//#region Tools
+
+function renderToolsTab() {
+    // Versions
+    addVersions($('[data-nav-tab="tools"] select[data-em-para="based-on"]'));
+}
+
+function handleToolsAction(action) {
+    if (action == 'gen-metadata-json') {
+        const basedOn = ($('[data-nav-tab="tools"] select[data-em-para="based-on"]').val() ?? '').toString();
+        const withCode = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code"]').prop('checked') == true;
+        const withCodeBrute = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code-brute"]').prop('checked') == true;
+        const url = new URL(config.downloadUrl);
+        url.searchParams.append('mode', action);
+        url.searchParams.append('version', basedOn);
+        url.searchParams.append('code', withCode ? '1' : '0');
+        url.searchParams.append('brute', withCodeBrute ? '1' : '0');
+        log('Requestiong download from:',url);
+        showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
+        // @ts-ignore
+        window.location = url;
     }
 }
 
@@ -337,12 +383,12 @@ function handleActions(event) {
             var target = $source.attr('data-nav-target') ?? ''
             activateTab(target)
             break;
-        case 'uploads-get-strings':
-        case 'uploads-get-zip':
-        case 'uploads-delete':
-            handleUploadsAction(action, ($source.attr('data-version') ?? '').toString());
+        case 'package-get-strings':
+        case 'package-get-zip':
+        case 'package-delete':
+            handlePackagesAction(action, ($source.attr('data-version') ?? '').toString());
             break;
-        case 'gen-json':
+        case 'gen-metadata-json':
             handleToolsAction(action);
             break;
         // ???
@@ -485,6 +531,18 @@ function resolveJSMO(name) {
         jsmo = jsmo[part];
     }
     return jsmo;
+}
+
+function addVersions($select) {
+    for (const key in config.availableVersions) {
+        const $opt = $('<option></option>');
+        $opt.prop('selected', key == 'current');
+        $opt.val(key);
+        $opt.text(config.availableVersions[key]);
+        $select.append($opt);
+    }
+    // @ts-ignore
+    $select.select2();
 }
 
 //#endregion

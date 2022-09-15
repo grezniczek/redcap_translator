@@ -17,7 +17,7 @@ class Downloader {
             $err_nofile = "Failed to locate file on server.";
             $err_invalidzip = "Failed to open ZIP archive (#CODE#). Damaged file?";
             // Verify valid action
-            if (!in_array($mode, ["strings", "zip", "json"], true)) return $err_unsupported;
+            if (!in_array($mode, ["package-get-strings", "package-get-zip", "gen-metadata-json"], true)) return $err_unsupported;
             // Verify stored version
             $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::UPLOADS_SETTING_NAME) ?? [];
             if (!array_key_exists($version, $stored)) return $err_unsupported;
@@ -28,7 +28,7 @@ class Downloader {
             $file_info = db_fetch_assoc($result);
             if (empty($file_info) || $file_info["doc_id"] != $edoc_id) return $err_nofile;
             // Download ZIP package
-            if ($mode == "zip") {
+            if ($mode == "package-get-zip") {
                 // Copy file and serve, then delete
                 $local_file = \Files::copyEdocToTemp($edoc_id);
                 header('Content-Type: '.$file_info['mime_type'].'; name="'.$file_info['doc_name'].'"');
@@ -38,7 +38,7 @@ class Downloader {
                 exit;
             }
             // Get the strings
-            if ($mode == "strings") {
+            if ($mode == "package-get-strings") {
                 $result = REDCapTranslatorExternalModule::get_strings_from_zip($edoc_id, $version);
                 if (is_array($result)) {
                     $ini_name = "English_v$version.ini";
@@ -52,7 +52,7 @@ class Downloader {
                 exit;
             }
             // Get the strings metadata
-            if ($mode == "json") {
+            if ($mode == "gen-metadata-json") {
                 $previous = null; // TODO 
                 $result = REDCapTranslatorExternalModule::generate_metadata($edoc_id, $version, $m->VERSION, $code, $brute, $previous);
                 $json_name = "REDCap_v{$version}_Strings_Metadata.json";
@@ -67,4 +67,4 @@ class Downloader {
         }
     }
 }
-Downloader::start($module);
+print Downloader::start($module);

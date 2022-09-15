@@ -15,17 +15,28 @@
  *  uploadUrl: string
  *  downloadUrl: string,
  *  csrfToken: string
- *  uploads: object<string,UploadData>
- *  uploadedVersions:
+ *  packages: object<string,PackageData>
+ *  languages: object<string, LanguageData>
+ *  availableVersions: object<string,string>
  * }}
  */
 
 /**
- * @typedef UploadData
+ * @typedef PackageData
  * @type {{
  *  version: string
  *  upgrade: boolean
  *  size: Number
+ * }}
+ */
+
+/**
+ * @typedef LanguageData
+ * @type {{
+ *  name: string
+ *  'localized-name': string
+ *  iso: string
+ *  coverage: string
  * }}
  */
 

@@ -145,7 +145,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return parse_ini_string($contents);
     }
 
-    public function get_uploaded_versions() {
+    public function get_available_versions() {
         $versions = [];
         $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME);
         foreach ($uploads as $version => $_) {
