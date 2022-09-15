@@ -32,14 +32,24 @@ class REDCapTranslatorPlugin {
         );
         // Languages
         $languages = [];
+        $stored_langs = self::$m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME);
+        foreach ($stored_langs as $name => $entry) {
+            $languages[$name] = [
+                "name" => $entry["name"],
+                "localized-name" => $entry["localized-name"],
+                "iso" => $entry["iso"],
+                "coverage" => $entry["coverage"],
+                "updated" => $entry["updated"],
+            ];
+        }
         // TODO
         $settings["languages"] = $languages;
 
         // Packages
         $packages = [];
-        $edocs = self::$m->getSystemSetting(REDCapTranslatorExternalModule::UPLOADS_SETTING_NAME);
-        foreach ($edocs as $version => $edoc_id) {
-            list($name, $size) = \Files::getEdocNameAndSize($edoc_id);
+        $store = self::$m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME);
+        foreach ($store as $version => $doc_id) {
+            list($name, $size) = \Files::getEdocNameAndSize($doc_id);
             $packages[$version] = [
                 "version" => $version,
                 "size" => $size * 1,
@@ -152,7 +162,9 @@ REDCapTranslatorPlugin::init($module);
                     <tr>
                         <th scope="col">Name</th>
                         <th scope="col">Localized Name</th>
+                        <th scope="col">ISO</th>
                         <th scope="col">Coverage</th>
+                        <th scope="col">Last Updated</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -175,14 +187,24 @@ REDCapTranslatorPlugin::init($module);
                     </td>
                     <td>
                         <div class="text-cell">
+                            <span data-key="iso"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-cell">
                             <span data-key="coverage"></span>
                         </div>
                     </td>
                     <td>
+                        <div class="text-cell">
+                            <span data-key="updated"></span>
+                        </div>
+                    </td>
+                    <td>
                         <button data-action="language-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this language"><i class="fas fa-file-alt text-info"></i></button>
-                        <button data-action="language-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this language"><i class="fas fa-file-archive"></i></button>
+                        <button data-action="language-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this language"><i class="fas fa-file-code"></i></button>
                         |
-                        <button data-action="langauge-delete" class="btn btn-light btn-sm" title="Delete this language from the server"><i class="far fa-trash-alt text-danger"></i></button>
+                        <button data-action="language-delete" class="btn btn-light btn-sm" title="Delete this language from the server"><i class="far fa-trash-alt text-danger"></i></button>
                     </td>
                 </tr>
             </template>

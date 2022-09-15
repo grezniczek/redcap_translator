@@ -19,18 +19,18 @@ class Downloader {
             // Verify valid action
             if (!in_array($mode, ["package-get-strings", "package-get-zip", "gen-metadata-json"], true)) return $err_unsupported;
             // Verify stored version
-            $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::UPLOADS_SETTING_NAME) ?? [];
+            $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME) ?? [];
             if (!array_key_exists($version, $stored)) return $err_unsupported;
-            $edoc_id = $stored[$version];
+            $doc_id = $stored[$version];
             // Get metadata
             $sql = "SELECT * FROM redcap_edocs_metadata WHERE doc_id = ? AND ISNULL(project_id) AND (delete_date IS NULL OR (delete_date IS NOT NULL AND delete_date > '".NOW."'))";
-            $result = $m->query($sql, [$edoc_id]);
+            $result = $m->query($sql, [$doc_id]);
             $file_info = db_fetch_assoc($result);
-            if (empty($file_info) || $file_info["doc_id"] != $edoc_id) return $err_nofile;
+            if (empty($file_info) || $file_info["doc_id"] != $doc_id) return $err_nofile;
             // Download ZIP package
             if ($mode == "package-get-zip") {
                 // Copy file and serve, then delete
-                $local_file = \Files::copyEdocToTemp($edoc_id);
+                $local_file = \Files::copyEdocToTemp($doc_id);
                 header('Content-Type: '.$file_info['mime_type'].'; name="'.$file_info['doc_name'].'"');
                 header('Content-Disposition: attachment; filename="'.$file_info['doc_name'].'"');
                 readfile_chunked($local_file);
@@ -39,7 +39,7 @@ class Downloader {
             }
             // Get the strings
             if ($mode == "package-get-strings") {
-                $result = REDCapTranslatorExternalModule::get_strings_from_zip($edoc_id, $version);
+                $result = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
                 if (is_array($result)) {
                     $ini_name = "English_v$version.ini";
                     header('Content-Type: text/plain; name="'.$ini_name.'"');
@@ -54,7 +54,7 @@ class Downloader {
             // Get the strings metadata
             if ($mode == "gen-metadata-json") {
                 $previous = null; // TODO 
-                $result = REDCapTranslatorExternalModule::generate_metadata($edoc_id, $version, $m->VERSION, $code, $brute, $previous);
+                $result = REDCapTranslatorExternalModule::generate_metadata($doc_id, $version, $m->VERSION, $code, $brute, $previous);
                 $json_name = "REDCap_v{$version}_Strings_Metadata.json";
                 header('Content-Type: application/json; name="'.$json_name.'"');
                 header('Content-Disposition: attachment; filename="'.$json_name.'"');

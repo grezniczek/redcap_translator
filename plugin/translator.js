@@ -65,12 +65,44 @@ var currentTab = '';
 
 //#region Languages
 
-function sortLanguages() {
-    const sorted = {};
-    for (const name of Object.keys(config.languages).sort()) {
-        sorted.push(config.languages[name]);
+/**
+ * Handles actions from the Languages table
+ * @param {string} action 
+ * @param {string} name 
+ */
+ function handleLanguagesAction(action, name) {
+    log('Language action:', action, name);
+    switch(action) {
+        case 'language-delete':
+            JSMO.ajax(action, name)
+            .then(function(response) {
+                log('Ajax: ', response)
+                if (response.success) {
+                    delete config.languages[name];
+                    renderLanguagesTab();
+                    showToast('#translator-successToast', 'Language \'' + name + '\' has been deleted.');
+                }
+                else {
+                    showToast('#translator-errorToast', 'Failed to delete language \'' + name + '\'. Check the console for details.');
+                    error('Failed to delete language \'' + name + '\':', response.error);
+                }
+            })
+            .catch(function(err) {
+                showToast('#translator-errorToast', 'Failed to delete language \'' + name + '\'. Check the console for details.');
+                error('Failed to delete language \'' + name + '\':', err);
+            });
+        break;
+        case 'language-get-ini':
+        case 'language-get-json':
+            const url = new URL(config.downloadUrl);
+            url.searchParams.append('mode', action);
+            url.searchParams.append('name', name);
+            log('Requesting download from:',url);
+            showToast('#translator-successToast', 'Initiated download of language \'' + name + '\' file. The download should start momentarily.');
+            // @ts-ignore
+            window.location = url;
+        break;
     }
-    return sorted;
 }
 
 /**
@@ -84,10 +116,10 @@ function sortLanguages() {
     const $tbody = $('div.translator-em tbody.languages-body');
     // Remove all rows
     $tbody.children().remove();
-    const keys = sortLanguages();
-    if (keys.length) {
+    const langs = Object.keys(config.languages).sort();
+    if (langs.length) {
         // Create rows
-        for (const key in sortLanguages()) {
+        for (const key of langs) {
             /** @type LanguageData */
             const language = config.languages[key];
             const $row = getTemplate('languages-row');
@@ -95,7 +127,7 @@ function sortLanguages() {
             $row.find('[data-key]').each(function() {
                 const $this = $(this);
                 const name = $this.attr('data-key') ?? '';
-                if (['name','localized-name','coverage'].includes(name)) {
+                if (['name','localized-name','iso','coverage','updated'].includes(name)) {
                     $this.text(language[name]);
                 }
             });
@@ -130,14 +162,15 @@ function sortLanguages() {
         if (!regex.test(file.name)) {
             $file.addClass('is-invalid');
             event.target.setCustomValidity('Invalid');
-            $invalid.text('This is not a JSON file.');
+            $invalid.text('Invalid file name. It must have a JSON extension.');
         }
         else {
             $file.removeClass('is-valid').addClass('is-valid');
             $spinner.removeClass('hide');
             log('Uploading: "' + file.name + '"');
             const formData = new FormData();
-            formData.append("language_json", file, file.name);
+            formData.append('mode', 'language-json');
+            formData.append('file', file, file.name);
             formData.append('redcap_csrf_token', config.csrfToken);
             $.ajax({
                 type: "POST",
@@ -165,7 +198,8 @@ function sortLanguages() {
                             name: data.name,
                             'localized-name': data['localized-name'],
                             iso: data.iso,
-                            coverage: data.coverage
+                            coverage: data.coverage,
+                            updated: data.updated
                         };
                         renderLanguagesTab();
                     }
@@ -271,6 +305,10 @@ function handlePackagesAction(action, version) {
                     renderPackagesTab();
                     showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
                 }
+                else {
+                    showToast('#translator-errorToast', 'Failed to delete version \'' + version + '\'. Check the console for details.');
+                    error('Failed to delete version \'' + version + '\':', response.error);
+                }
             })
             .catch(function(err) {
                 showToast('#translator-errorToast', 'Failed to delete version \'' + version + '\'. Check the console for details.');
@@ -282,8 +320,8 @@ function handlePackagesAction(action, version) {
             const url = new URL(config.downloadUrl);
             url.searchParams.append('mode', action);
             url.searchParams.append('version', version);
-            log('Requestiong download from:',url);
-            showToast('#translator-successToast', 'Initiated download of version \'' + version + '\' ZIP file. The download should start momentarily.');
+            log('Requesting download from:',url);
+            showToast('#translator-successToast', 'Initiated download of version \'' + version + '\' file. The download should start momentarily.');
             // @ts-ignore
             window.location = url;
         break;
@@ -320,7 +358,8 @@ function uploadZip(event) {
             $spinner.removeClass('hide');
             log('Uploading: "' + file.name + '"');
             const formData = new FormData();
-            formData.append("redcap_zip", file, file.name);
+            formData.append('mode', 'package-zip');
+            formData.append('file', file, file.name);
             formData.append('redcap_csrf_token', config.csrfToken);
             $.ajax({
                 type: "POST",
@@ -477,6 +516,11 @@ function handleActions(event) {
             break;
         case 'gen-metadata-json':
             handleToolsAction(action);
+            break;
+        case 'language-delete':
+        case 'language-get-json':
+        case 'language-get-ini':
+            handleLanguagesAction(action, ($source.attr('data-name') ?? '').toString());
             break;
         // ???
         default:

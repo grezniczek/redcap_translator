@@ -36,6 +36,7 @@
  *  'localized-name': string
  *  iso: string
  *  coverage: string
+ *  updated: string
  * }}
  */
 

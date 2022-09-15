@@ -12,7 +12,8 @@ require_once "classes/InjectionHelper.php";
 class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalModule {
 
 
-    public const UPLOADS_SETTING_NAME = "upload";
+    public const PACKAGES_SETTING_NAME = "upload";
+    public const LANGUAGES_SETTING_NAME = "languages";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR = "‌";
 
@@ -33,14 +34,36 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
+            case "language-delete": 
+                $name = $payload;
+                $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];
+                if (array_key_exists($name, $store)) {
+                    $lang = $store[$name];
+                    $doc_id = $lang["doc_id"];
+                    \Files::deleteFileByDocId($doc_id);
+                    $this->log("Deleted language '{$lang["name"]}' (doc_id = $doc_id).");
+                    unset($store[$name]);
+                    $this->setSystemSetting(self::LANGUAGES_SETTING_NAME, $store);
+                    return [
+                        "success" => true,
+                    ];
+                }
+                else {
+                    return [
+                        "success" => false,
+                        "error" => "This language does not exist on the server."
+                    ];
+                }
+                break;
             case "package-delete":
                 $version = $payload;
-                $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME) ?? [];
-                if (array_key_exists($version, $uploads)) {
-                    $edoc_id = $uploads[$version];
-                    \Files::deleteFileByDocId($edoc_id);
-                    unset($uploads[$version]);
-                    $this->setSystemSetting(self::UPLOADS_SETTING_NAME, $uploads);
+                $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
+                if (array_key_exists($version, $store)) {
+                    $doc_id = $store[$version];
+                    $this->log("Deleted package version $version (doc_id = $doc_id).");
+                    \Files::deleteFileByDocId($doc_id);
+                    unset($store[$version]);
+                    $this->setSystemSetting(self::PACKAGES_SETTING_NAME, $store);
                     return [
                         "success" => true,
                     ];
@@ -54,11 +77,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 break;
             case "package-get-zip":
                 $version = $payload;
-                $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME) ?? [];
-                if (array_key_exists($version, $uploads)) {
-                    $edoc_id = $uploads[$version];
-                    $edoc_hash = \Files::docIdHash($edoc_id);
-                    $url = APP_PATH_WEBROOT . "DataEntry/file_download.php?doc_id_hash=$edoc_hash";
+                $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
+                if (array_key_exists($version, $store)) {
+                    $doc_id = $store[$version];
+                    $doc_hash = \Files::docIdHash($doc_id);
+                    $url = APP_PATH_WEBROOT . "DataEntry/file_download.php?doc_id_hash=$doc_hash";
                     return [
                         "success" => true,
                         "url" => $url
@@ -101,9 +124,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
-    public static function get_strings_from_zip($edoc_id, $version) {
+    public static function get_strings_from_zip($doc_id, $version) {
         // Copy archive to local temp
-        $local_file = \Files::copyEdocToTemp($edoc_id);
+        $local_file = \Files::copyEdocToTemp($doc_id);
         // Extract and merge languages
         $zip = new \ZipArchive;
         $result = $zip->open($local_file);
@@ -151,8 +174,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
-    public static function generate_metadata($edoc_id, $version, $module_version, $code, $brute, $previous = []) {
-        $strings = REDCapTranslatorExternalModule::get_strings_from_zip($edoc_id, $version);
+    public static function generate_metadata($doc_id, $version, $module_version, $code, $brute, $previous = []) {
+        $strings = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
         $json = [
             "version" => $version,
             "based-on" => $previous["version"] ?? "",
@@ -196,7 +219,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         // TODO - new, changed - from prev file
         // Code lens
         if ($code) {
-            self::augment_with_code($json, $edoc_id, $brute, $previous);
+            self::augment_with_code($json, $doc_id, $brute, $previous);
         }
         $json["stats"]["n-new-strings"] = count($json["new-strings"]);
         $json["stats"]["n-removed-strings"] = count($json["removed-strings"]);
@@ -205,9 +228,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $json;
     }
 
-    private static function augment_with_code(&$json, $edoc_id, $brute, $previous) {
+    private static function augment_with_code(&$json, $doc_id, $brute, $previous) {
         // Copy archive to local temp
-        $local_file = \Files::copyEdocToTemp($edoc_id);
+        $local_file = \Files::copyEdocToTemp($doc_id);
         // Extract and merge languages
         $zip = new \ZipArchive;
         $result = $zip->open($local_file);
