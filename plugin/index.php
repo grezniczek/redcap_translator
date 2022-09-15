@@ -28,7 +28,6 @@ class REDCapTranslatorPlugin {
             "downloadUrl" => self::$m->getUrl("plugin/download.php"),
             "csrfToken" => self::$m->getCSRFToken(),
             "invisibleChar" => REDCapTranslatorExternalModule::INVISIBLE_CHAR,
-            "availableVersions" => self::$m->get_available_versions(),
             "state" => self::$m->get_state(),
         );
         // Languages

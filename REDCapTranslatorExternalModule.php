@@ -150,14 +150,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return parse_ini_string($contents);
     }
 
-    public function get_available_versions() {
-        $versions = [];
-        $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME);
-        foreach ($uploads as $version => $_) {
-            $versions[$version] = "$version";
-        }
-        return $versions;
-    }
 
     public static function generate_metadata($edoc_id, $version, $module_version, $code, $brute, $previous = []) {
         $strings = REDCapTranslatorExternalModule::get_strings_from_zip($edoc_id, $version);
