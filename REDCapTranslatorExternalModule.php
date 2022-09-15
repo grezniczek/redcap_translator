@@ -33,7 +33,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
-            case "uploads-delete":
+            case "package-delete":
                 $version = $payload;
                 $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME) ?? [];
                 if (array_key_exists($version, $uploads)) {
@@ -52,7 +52,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     ];
                 }
                 break;
-            case "uploads-get-zip":
+            case "package-get-zip":
                 $version = $payload;
                 $uploads = $this->getSystemSetting(self::UPLOADS_SETTING_NAME) ?? [];
                 if (array_key_exists($version, $uploads)) {
@@ -83,6 +83,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     "error" => "Unknown setting '$setting'."
                 ];
                 break;
+            default:
+                return [
+                    "success" => false,
+                    "error" => "Invalid action '$action'."
+                ];
         }
     }
 

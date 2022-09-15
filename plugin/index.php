@@ -113,7 +113,7 @@ REDCapTranslatorPlugin::init($module);
                 <i>Note that these files are language JSON files rather than INI files, which are used by REDCap. JSON files contain additional metadata. INI files can be converted to JSON files on the <em>Tools</em> tab.</i>
             </p>
             <form class="ml-2">
-                <div class="custom-file">
+                <div class="custom-file" data-uploader="lang-json">
                     <input type="file" class="custom-file-input" name="upload-lang-json" id="upload-lang-json" accept=".json" />
                     <label class="custom-file-label" for="upload-lang-json">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
@@ -122,26 +122,27 @@ REDCapTranslatorPlugin::init($module);
                     <div class="invalid-feedback">This is not a valid language JSON file.</div>
                 </div>
             </form>
-            <p class="ml-2">
-                Or, create a new file, based on REDCap 
-                <div class="form-inline">
-                    <label class="mr-2" for="gen-lang-based-on">Based on REDCap</label>
-                    <select id="gen-lang-based-on" class="form-control mr-2" data-em-para="gen-lang-basedon"></select>
+            <p>
+                or <b>create</b> a new file, 
+                <div class="form-inline ml-2">
+                    <label class="mr-2" for="create-lang-based-on">based on REDCap</label>
+                    <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
+                    <span class="ml-2">and the following parameters:</span>
                 </div>
                 <div class="form-inline mt-2 ml-2">
                     <div class="form-group">
-                        <label class="sr-only" for="gen-lang-name">Name (must be unique)</label>
-                        <input data-em-para="gen-lang-name" type="text" id="gen-lang-name" class="form-control form-control-sm mr-2" placeholder="Name" required>
+                        <label class="sr-only" for="create-lang-name">Name (must be unique)</label>
+                        <input data-em-para="create-lang-name" type="text" id="create-lang-name" class="form-control form-control-sm mr-2" placeholder="Name" required>
                     </div>
                     <div class="form-group">
-                        <label class="sr-only" for="gen-lang-localizedname">Name (must be unique)</label>
-                        <input data-em-para="gen-lang-localizedname" type="text" id="gen-lang-localizedname" class="form-control form-control-sm mr-2" placeholder="Localized name" required>
+                        <label class="sr-only" for="create-lang-localizedname">Name (must be unique)</label>
+                        <input data-em-para="create-lang-localizedname" type="text" id="create-lang-localizedname" class="form-control form-control-sm mr-2" placeholder="Localized name" required>
                     </div>
                     <div class="form-group">
-                        <label class="sr-only" for="gen-lang-iso">ISO code (such as, e.g. en-US)</label>
-                        <input data-em-para="gen-lang-iso" type="text" id="gen-lang-iso" class="form-control form-control-sm mr-2" placeholder="ISO (optional)">
+                        <label class="sr-only" for="create-lang-iso">ISO code (such as, e.g. en-US)</label>
+                        <input data-em-para="create-lang-iso" type="text" id="create-lang-iso" class="form-control form-control-sm mr-2" placeholder="ISO (optional)">
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm">Create</button>
+                    <button data-action="create-new-lang" class="btn btn-primary btn-sm">Create</button>
                 </div>
             </p>
             <h3 class="mt-2">
@@ -201,7 +202,7 @@ REDCapTranslatorPlugin::init($module);
             </p>
             </h2>
             <form>
-                <div class="custom-file">
+                <div class="custom-file" data-uploader="package-zip">
                     <input type="file" class="custom-file-input" name="package-zip" id="package-zip" accept=".zip" />
                     <label class="custom-file-label" for="package-zip">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>

@@ -17,7 +17,6 @@
  *  csrfToken: string
  *  packages: object<string,PackageData>
  *  languages: object<string, LanguageData>
- *  availableVersions: object<string,string>
  * }}
  */
 

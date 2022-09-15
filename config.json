@@ -35,9 +35,10 @@
     "project-settings": [
     ],
     "auth-ajax-actions": [
-        "uploads-get-strings",
-        "uploads-get-zip",
-        "uploads-delete",
+        "language-delete",
+        "package-get-strings",
+        "package-get-zip",
+        "package-delete",
         "settings-update"
     ],
     "crons": [

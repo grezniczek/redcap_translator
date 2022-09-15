@@ -43,6 +43,8 @@ THIS.init = function(data) {
         // Handle actions
         // General
         $('div.translator-em').on('click', handleActions);
+        // Languages 
+        $('div.translator-em input[name=upload-lang-json]').on('change', uploadLanguageJson);
         // Packages 
         $('div.translator-em input[name=package-zip]').on('change', uploadZip);
         // Settings
@@ -76,7 +78,7 @@ function sortLanguages() {
  */
  function renderLanguagesTab() {
     // Versions
-    addVersions($('[data-nav-tab="languages"] select[data-em-para="gen-lang-basedon"]'));
+    addVersions($('[data-nav-tab="languages"] select[data-em-para="create-lang-basedon"]'));
     log('Updating languages:', config.languages);
 
     const $tbody = $('div.translator-em tbody.languages-body');
@@ -106,6 +108,90 @@ function sortLanguages() {
     }
 }
 
+/**
+ * Uploads a language JSON file.
+ * @param {JQuery.TriggeredEvent} event
+ */
+ function uploadLanguageJson(event) {
+    const $uploader = $('div.translator-em [data-uploader="lang-json"]');
+    const $file = $uploader.find('input[name=package-zip]');
+    const $filename = $uploader.find('span.filename');
+    const $spinner = $uploader.find('.processing-file');
+    const $progress = $uploader.find('[data-upload-progress]');
+    const $invalid = $uploader.find('.invalid-feedback');
+    $filename.html('Choose or drop JSON file&hellip;');
+    $file.removeClass('is-valid').removeClass('is-invalid');
+    $spinner.addClass('hide');
+    const files = $file.prop('files')
+    if (files.length === 1) {
+        const file = files[0];
+        $filename.text(file.name);
+        // REDCap install/upgrade file regex: https://regex101.com/r/QDOxi6/2
+        const regex = /^redcap(?<version>\d+\.\d+\.\d+)(_upgrade){0,1}\.zip$/gm;
+        if (!regex.test(file.name)) {
+            $file.addClass('is-invalid');
+            event.target.setCustomValidity('Invalid');
+            $invalid.text('This is not a valid REDCap package.');
+        }
+        else {
+            $file.removeClass('is-valid').addClass('is-valid');
+            $spinner.removeClass('hide');
+            log('Uploading: "' + file.name + '"');
+            const formData = new FormData();
+            formData.append("redcap_zip", file, file.name);
+            formData.append('redcap_csrf_token', config.csrfToken);
+            $.ajax({
+                type: "POST",
+                url: config.uploadUrl,
+                xhr: function () {
+                    const xhr = new XMLHttpRequest();
+                    if (xhr.upload) {
+                        xhr.upload.addEventListener('progress', function(e) {
+                            let percent = 0;
+                            if (e.lengthComputable) {
+                                percent = Math.ceil(e.loaded / e.total * 100);
+                            }
+                            $progress.text(percent.toString());
+                        }, false);
+                    }
+                    return xhr;
+                },
+                success: function (response) {
+                    $spinner.addClass('hide');
+                    const data = JSON.parse(response)
+                    if (data.success) {
+                        showToast('#translator-successToast', 'File has been uploaded.');
+                        log('File upload succeeded:', data);
+                        config.packages[data.version] = {
+                            version: data.version,
+                            upgrade: data.upgrade,
+                            size: data.size,
+                        };
+                        renderPackagesTab();
+                    }
+                    else {
+                        $file.addClass('is-invalid').removeClass('is-valid');
+                        event.target.setCustomValidity('Invalid');
+                        $invalid.text(data.error);
+                        error('File upload failed: ' + data.error);
+                    }
+                },
+                error: function (err) {
+                    $spinner.addClass('hide');
+                    showToast('#translator-errorToast', 'Failed to upload the file. See console for details.');
+                    error('Error', err);
+                },
+                async: true,
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                timeout: 0
+            });
+
+        }
+    }
+}
 
 //#endregion
 
@@ -123,7 +209,7 @@ function sortPackages() {
     }
     /** @type {Array<string>} */
     const sorted = [];
-    for (const sortKey of Object.keys(unsorted).sort()) {
+    for (const sortKey of Object.keys(unsorted).sort().reverse()) {
         const key = unsorted[sortKey];
         sorted.push(key);
     }
@@ -209,11 +295,12 @@ function handlePackagesAction(action, version) {
  * @param {JQuery.TriggeredEvent} event
  */
 function uploadZip(event) {
-    const $file = $('div.translator-em input[name=package-zip]');
-    const $filename = $('div.translator-em label[for=package-zip] span.filename');
-    const $spinner = $('div.translator-em label[for=package-zip] .processing-file');
-    const $progress = $('div.translator-em label[for=package-zip] [data-upload-progress]');
-    const $invalid = $('div.translator-em div.invalid-feedback');
+    const $uploader = $('div.translator-em [data-uploader="package-zip"]');
+    const $file = $uploader.find('input[name=package-zip]');
+    const $filename = $uploader.find('span.filename');
+    const $spinner = $uploader.find('.processing-file');
+    const $progress = $uploader.find('[data-upload-progress]');
+    const $invalid = $uploader.find('.invalid-feedback');
     $filename.html('Choose or drop ZIP file&hellip;');
     $file.removeClass('is-valid').removeClass('is-invalid');
     $spinner.addClass('hide');
@@ -534,11 +621,11 @@ function resolveJSMO(name) {
 }
 
 function addVersions($select) {
-    for (const key in config.availableVersions) {
+    for (const key of sortPackages()) {
         const $opt = $('<option></option>');
         $opt.prop('selected', key == 'current');
         $opt.val(key);
-        $opt.text(config.availableVersions[key]);
+        $opt.text(key);
         $select.append($opt);
     }
     // @ts-ignore
