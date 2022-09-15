@@ -174,7 +174,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
-    public static function generate_metadata($doc_id, $version, $module_version, $code, $brute, $previous = []) {
+    public static function generate_metadata($doc_id, $version, $module_version, $code, $previous = []) {
         $strings = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
         $json = [
             "version" => $version,
@@ -219,7 +219,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         // TODO - new, changed - from prev file
         // Code lens
         if ($code) {
-            self::augment_with_code($json, $doc_id, $brute, $previous);
+            self::augment_with_code($json, $doc_id, $previous);
         }
         $json["stats"]["n-new-strings"] = count($json["new-strings"]);
         $json["stats"]["n-removed-strings"] = count($json["removed-strings"]);
@@ -228,7 +228,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $json;
     }
 
-    private static function augment_with_code(&$json, $doc_id, $brute, $previous) {
+    private static function augment_with_code(&$json, $doc_id, $previous) {
         // Copy archive to local temp
         $local_file = \Files::copyEdocToTemp($doc_id);
         // Extract and merge languages
@@ -295,24 +295,22 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     }
                 }
             }
-            if ($brute) {
-                // Find additional entries by searching for each defined string
-                foreach ($json["strings"] as $key => &$item) {
-                    $re =  '/(?\'q1\'[\'"])'.$key.'(?P=q1)/m';
-                    if (preg_match_all($re, $content, $matches, PREG_OFFSET_CAPTURE)) {
-                        foreach ($matches[0] as $match) {
-                            $offset = $match[1];
-                            list($line_number, $context_hash) = $get_context($offset);
-                            if (!isset($item["source-locations"][$source_path][$line_number])) {
-                                $n_brute_forced++;
-                                $source_location = [
-                                    "context-hash" => $context_hash,
-                                    "new" => false, // TODO - factor in previous
-                                    "new-context" => false, // TODO - factor in previous
-                                    "via-brute" => true,
-                                ];
-                                $item["source-locations"][$source_path][$line_number] = $source_location;
-                            }
+            // Find additional entries by searching for each defined string
+            foreach ($json["strings"] as $key => &$item) {
+                $re =  '/(?\'q1\'[\'"])'.$key.'(?P=q1)/m';
+                if (preg_match_all($re, $content, $matches, PREG_OFFSET_CAPTURE)) {
+                    foreach ($matches[0] as $match) {
+                        $offset = $match[1];
+                        list($line_number, $context_hash) = $get_context($offset);
+                        if (!isset($item["source-locations"][$source_path][$line_number])) {
+                            $n_brute_forced++;
+                            $source_location = [
+                                "context-hash" => $context_hash,
+                                "new" => false, // TODO - factor in previous
+                                "new-context" => false, // TODO - factor in previous
+                                "via-brute" => true,
+                            ];
+                            $item["source-locations"][$source_path][$line_number] = $source_location;
                         }
                     }
                 }
@@ -338,7 +336,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
         $json["stats"]["n-php-files"] = $n_php_files;
         $json["stats"]["n-js-files"] = $n_js_files;
-        if ($brute) $json["stats"]["n-brute"] = $n_brute_forced;
+        $json["stats"]["n-brute"] = $n_brute_forced;
     }
 
     private static function contains_html($s) {
