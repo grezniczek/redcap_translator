@@ -12,7 +12,7 @@ require_once "classes/InjectionHelper.php";
 class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalModule {
 
 
-    public const PACKAGES_SETTING_NAME = "upload";
+    public const PACKAGES_SETTING_NAME = "packages";
     public const LANGUAGES_SETTING_NAME = "languages";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR = "‌";
