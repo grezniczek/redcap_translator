@@ -155,9 +155,9 @@ REDCapTranslatorPlugin::init($module);
             </h3>
             <p>
                 <div class="form-inline ml-2">
-                        <label class="mr-2" for="create-lang-based-on">Base actions on REDCap version </label>
-                        <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
-                        <span class="ml-2">metadata.</span>
+                    <label class="mr-2" for="create-lang-based-on">Base actions on REDCap version </label>
+                    <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
+                    <span class="ml-2">metadata.</span>
                 </div>
             </p>
             <table class="table table-responsive table-md">
