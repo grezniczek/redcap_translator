@@ -39,7 +39,7 @@ class REDCapTranslatorPlugin {
                 "localized-name" => $entry["localized-name"],
                 "iso" => $entry["iso"],
                 "coverage" => $entry["coverage"],
-                "updated" => $entry["updated"],
+                "updated" => $entry["timestamp"],
             ];
         }
         // TODO
@@ -133,20 +133,21 @@ REDCapTranslatorPlugin::init($module);
             </form>
             <p>
                 or <b>create</b> a new file, with the following parameters:
-                <div class="form-inline mt-2 ml-2">
+                <div class="form-inline mt-2 ml-2" data-form="create-new-lang">
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-name">Name (must be unique)</label>
-                        <input data-em-para="create-lang-name" type="text" id="create-lang-name" class="form-control form-control-sm mr-2" placeholder="Name" required>
+                        <input data-em-para="create-lang-name" type="text" maxlength="100" id="create-lang-name" class="form-control form-control-sm mr-2 mb-2" placeholder="Name" required>
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-localizedname">Name (must be unique)</label>
-                        <input data-em-para="create-lang-localizedname" type="text" id="create-lang-localizedname" class="form-control form-control-sm mr-2" placeholder="Localized name" required>
+                        <input data-em-para="create-lang-localizedname" type="text" maxlength="100" id="create-lang-localizedname" class="form-control form-control-sm mr-2 mb-2" placeholder="Localized name" required>
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-iso">ISO code (such as, e.g. en-US)</label>
-                        <input data-em-para="create-lang-iso" type="text" id="create-lang-iso" class="form-control form-control-sm mr-2" placeholder="ISO (optional)">
+                        <input data-em-para="create-lang-iso" type="text" maxlength="10" id="create-lang-iso" class="form-control form-control-sm mr-2 mb-2" placeholder="ISO (optional)">
                     </div>
-                    <button data-action="create-new-lang" class="btn btn-primary btn-sm">Create</button>
+                    <button data-action="create-new-lang" class="btn btn-primary btn-sm mb-2">Create</button>
+                    <div class="invalid-feedback">Invalid input. <i>Name</i> and <i>Localized name</i> are required. <i>Name</i> must only contain letter, number, hyphen and underscore characters.</div>
                 </div>
             </p>
             <h3 class="mt-2">

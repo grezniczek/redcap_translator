@@ -14,6 +14,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     public const PACKAGES_SETTING_NAME = "packages";
     public const LANGUAGES_SETTING_NAME = "languages";
+    public const LANGUAGES_SETTING_STRINGS_PREFIX = "strings-";
+    public const LANGUAGES_SETTING_ANNOTATION_PREFIX = "annotation-";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR = "‌";
 
@@ -38,12 +40,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 $name = $payload;
                 $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];
                 if (array_key_exists($name, $store)) {
-                    $lang = $store[$name];
-                    $doc_id = $lang["doc_id"];
-                    \Files::deleteFileByDocId($doc_id);
-                    $this->log("Deleted language '{$lang["name"]}' (doc_id = $doc_id).");
+                    $this->setSystemSetting(self::LANGUAGES_SETTING_STRINGS_PREFIX.$name, null);
+                    $this->setSystemSetting(self::LANGUAGES_SETTING_ANNOTATION_PREFIX.$name, null);
                     unset($store[$name]);
                     $this->setSystemSetting(self::LANGUAGES_SETTING_NAME, $store);
+                    $this->log("Deleted language '{$name}'.");
                     return [
                         "success" => true,
                     ];
@@ -114,6 +115,16 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         }
     }
 
+
+    // Purge all parts that should not be stored
+    public static function sanitize_language($json) {
+        foreach (array_keys($json) as $key) {
+            if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url"], true)) {
+                unset($json[$key]);
+            }
+        }
+        return $json;
+    }
 
     public function get_state() {
         $state = $this->getSystemSetting("state") ?? [ 

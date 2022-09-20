@@ -1,11 +1,5 @@
 <?php namespace RUB\REDCapTranslatorExternalModule;
 
-use Exception;
-use InvalidArgumentException;
-use MicrosoftAzure\Storage\Common\Exceptions\InvalidArgumentTypeException;
-use RuntimeException;
-use LogicException;
-
 class REDCapTranslatorFileUploader {
 
     /**
@@ -53,26 +47,39 @@ class REDCapTranslatorFileUploader {
         // Does it have the required keys?
         $name = $json["name"] ?? "";
         $localized_name = $json["localized-name"] ?? "";
+        $iso = $json["iso"] ?? "";
+        // Extract strings and annotations for separate storage
         $strings = $json["strings"] ?? null;
+        $annotations = $json["annotations"] ?? [];
         if (empty($name)) {
             return [
                 "success" => false,
                 "error" => "Invalid language file. Missing required entry 'name'."
             ];
         }
-        else {
-            $re = '/^[A-Za-z_-]+$/m';
-            if (!preg_match($re, $name)) {
-                return [
-                    "success" => false,
-                    "error" => "Invalid language name. It must consist of letters, hyphen, and underscore only."
-                ];
-            }
+        $re = '/^[A-Za-z_-]+$/m';
+        if (!preg_match($re, $name)) {
+            return [
+                "success" => false,
+                "error" => "Invalid language name. It must consist of letters, hyphen, and underscore only."
+            ];
+        }
+        if (mb_strlen($name) > 100) {
+            return [
+                "success" => false,
+                "error" => "Invalid language file. Value of 'name' exceeds maximum length of 100 characters."
+            ];
         }
         if (empty($localized_name)) {
             return [
                 "success" => false,
                 "error" => "Invalid language file. Missing required entry 'localized-name'."
+            ];
+        }
+        if (mb_strlen($localized_name) > 100) {
+            return [
+                "success" => false,
+                "error" => "Invalid language file. Value of 'localized-name' exceeds maximum length of 100 characters."
             ];
         }
         if (!is_array($strings)) {
@@ -81,37 +88,30 @@ class REDCapTranslatorFileUploader {
                 "error" => "Invalid language file. Missing or invalid required entry 'strings'."
             ];
         }
-        // Add the file
-        $doc_id = \Files::uploadFile($file, null);
-        if (!$doc_id) {
+        if (mb_strlen($iso) > 10) {
             return [
                 "success" => false,
-                "error" => "Failed to store the uploaded file."
+                "error" => "Invalid language file. Value of 'iso' exceeds maximum length of 10 characters."
             ];
         }
-        // Update storage
-        $verb = "Uploaded";
+        // Purge all parts that should not be stored
+        $json = REDCapTranslatorExternalModule::sanitize_language($json);
+        // Store the file, in parts
         $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME) ?? [];
-        // In case this is a replacement - delete the previous document
-        $old_doc_id = $stored[$name]["doc_id"] ?? false;
-        if ($old_doc_id) {
-            \Files::deleteFileByDocId($old_doc_id);
-            $verb = "Replaced";
-        }
-        $entry = [
-            "name" => $name,
-            "localized-name" => $localized_name,
-            "iso" => $json["iso"] ?? "",
-            "coverage" => "TBD",
-            "updated" => $json["timestamp"] ?? "(???)",
-            "doc_id" => $doc_id,
-        ];
-        $stored[$name] = $entry;
+        // Created or updated?
+        $verb = isset($stored[$name]) ? "Updated" : "Created";
+        // Update storage
+        $json["coverage"] = "TBD";
+        if (!isset($json["iso"])) $json["iso"] = "";
+        if (!isset($json["timestamp"])) $json["timestamp"] = "(???)";
+        $json["filename"] = $file["name"];
+        $stored[$name] = $json;
         $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME, $stored);
-        $m->log("$verb language file '{$name}' ({$file["name"]}) (doc_id = $doc_id).");
-        unset($entry["doc_id"]);
-        $entry["success"] = true;
-        return $entry;
+        $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_STRINGS_PREFIX.$name, $strings);
+        $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_ANNOTATION_PREFIX.$name, $annotations);
+        $m->log("$verb language file '{$name}' ({$file["name"]}).");
+        $json["success"] = true;
+        return $json;
     }
 
     /**

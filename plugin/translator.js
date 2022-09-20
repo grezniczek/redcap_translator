@@ -73,7 +73,15 @@ var currentTab = '';
  function handleLanguagesAction(action, name) {
     log('Language action:', action, name);
     switch(action) {
-        case 'language-delete':
+        case 'create-new-lang': {
+            const name = ($('input[data-em-para="create-lang-name"]').val() ?? '').toString();
+            const localizedName = ($('input[data-em-para="create-lang-localizedname"]').val() ?? '').toString();
+            const iso = ($('input[data-em-para="create-lang-iso"]').val() ?? '').toString();
+            
+            log('action');
+        }
+        break;
+        case 'language-delete': {
             JSMO.ajax(action, name)
             .then(function(response) {
                 log('Ajax: ', response)
@@ -91,9 +99,10 @@ var currentTab = '';
                 showToast('#translator-errorToast', 'Failed to delete language \'' + name + '\'. Check the console for details.');
                 error('Failed to delete language \'' + name + '\':', err);
             });
+        }
         break;
         case 'language-get-ini':
-        case 'language-get-json':
+        case 'language-get-json': {
             const url = new URL(config.downloadUrl);
             url.searchParams.append('mode', action);
             url.searchParams.append('name', name);
@@ -101,6 +110,7 @@ var currentTab = '';
             showToast('#translator-successToast', 'Initiated download of language \'' + name + '\' file. The download should start momentarily.');
             // @ts-ignore
             window.location = url;
+        }
         break;
     }
 }
@@ -517,6 +527,7 @@ function handleActions(event) {
         case 'gen-metadata-json':
             handleToolsAction(action);
             break;
+        case 'create-new-lang':
         case 'language-delete':
         case 'language-get-json':
         case 'language-get-ini':
