@@ -13,9 +13,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
     public const PACKAGES_SETTING_NAME = "packages";
-    public const LANGUAGES_SETTING_NAME = "languages";
-    public const LANGUAGES_SETTING_STRINGS_PREFIX = "strings-";
-    public const LANGUAGES_SETTING_ANNOTATION_PREFIX = "annotation-";
+    public const TRANSLATIONS_SETTING_NAME = "translations";
+    public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
+    public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR = "‌";
 
@@ -61,10 +61,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
-            case "create-new-lang":
+            case "create-new-translation":
                 $error = self::validateCreateNewLang($payload);
                 if (empty($error)) {
-                    $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];
+                    $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
                     if (isset($store[$payload["name"]])) {
                         $error = "A language named '{$payload["name"]}' already exists.";
                     }
@@ -74,7 +74,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                         $payload["timestamp"] = date("Y-m-d H:i:s");
                         $payload["filename"] = $payload["name"].".json";
                         $store[$payload["name"]] = $payload;
-                        $this->setSystemSetting(self::LANGUAGES_SETTING_NAME, $store);
+                        $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
                         return [
                             "success" => true,
                             "data" => $payload
@@ -86,14 +86,14 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     "error" => $error
                 ];
                 break;
-            case "language-delete": 
+            case "translation-delete": 
                 $name = $payload;
-                $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];
+                $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
                 if (array_key_exists($name, $store)) {
-                    $this->setSystemSetting(self::LANGUAGES_SETTING_STRINGS_PREFIX.$name, null);
-                    $this->setSystemSetting(self::LANGUAGES_SETTING_ANNOTATION_PREFIX.$name, null);
+                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, null);
+                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, null);
                     unset($store[$name]);
-                    $this->setSystemSetting(self::LANGUAGES_SETTING_NAME, $store);
+                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
                     $this->log("Deleted language '{$name}'.");
                     return [
                         "success" => true,
@@ -167,7 +167,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
     // Purge all parts that should not be stored
-    public static function sanitize_language($json) {
+    public static function sanitize_tranlation($json) {
         foreach (array_keys($json) as $key) {
             if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url"], true)) {
                 unset($json[$key]);

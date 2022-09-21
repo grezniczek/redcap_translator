@@ -35,8 +35,8 @@
     "project-settings": [
     ],
     "auth-ajax-actions": [
-        "create-new-lang",
-        "language-delete",
+        "create-new-translation",
+        "translation-delete",
         "package-get-strings",
         "package-get-zip",
         "package-delete",

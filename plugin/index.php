@@ -30,11 +30,11 @@ class REDCapTranslatorPlugin {
             "invisibleChar" => REDCapTranslatorExternalModule::INVISIBLE_CHAR,
             "state" => self::$m->get_state(),
         );
-        // Languages
-        $languages = [];
-        $stored_langs = self::$m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME);
+        // Translations
+        $translations = [];
+        $stored_langs = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME);
         foreach ($stored_langs as $name => $entry) {
-            $languages[$name] = [
+            $translations[$name] = [
                 "name" => $entry["name"],
                 "localized-name" => $entry["localized-name"],
                 "iso" => $entry["iso"],
@@ -43,7 +43,7 @@ class REDCapTranslatorPlugin {
             ];
         }
         // TODO
-        $settings["languages"] = $languages;
+        $settings["translations"] = $translations;
 
         // Packages
         $packages = [];
@@ -77,7 +77,7 @@ REDCapTranslatorPlugin::init($module);
                 <a href="javascript:;" data-action="main-nav" data-nav-target="translate" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-exchange-alt"></i> Translate</a>
             </li>
             <li class="">
-                <a href="javascript:;" data-action="main-nav" data-nav-target="languages" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-globe"></i> Languages</a>
+                <a href="javascript:;" data-action="main-nav" data-nav-target="translations" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-globe"></i> Translations</a>
             </li>
             <li class="">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="packages" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-archive"></i> Packages</a>
@@ -111,15 +111,15 @@ REDCapTranslatorPlugin::init($module);
         </div>
         <?php #endregion 
         ?>
-        <?php #region Languages 
+        <?php #region Translations 
         ?>
-        <div data-nav-tab="languages" class="d-none">
+        <div data-nav-tab="translations" class="d-none">
             <p>
                 On this tab, ...
             </p>
-            <h2>Manage and upload language files</h2>
+            <h2>Manage and upload translation files</h2>
             <p class="small ml-2">
-                <i>Note that these files are language JSON files rather than INI files, which are used by REDCap. JSON files contain additional metadata. INI files can be converted to JSON files on the <em>Tools</em> tab.</i>
+                <i>Note that these files are translation JSON files rather than language INI files, which are used by REDCap. JSON files contain additional metadata. INI files can be converted to JSON files on the <em>Tools</em> tab.</i>
             </p>
             <form class="ml-2">
                 <div class="custom-file" data-uploader="lang-json">
@@ -128,12 +128,12 @@ REDCapTranslatorPlugin::init($module);
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
                         <span class="filename">Choose or drop JSON file&hellip;</span>
                     </label>
-                    <div class="invalid-feedback">This is not a valid language JSON file.</div>
+                    <div class="invalid-feedback">This is not a valid translation JSON file.</div>
                 </div>
             </form>
             <p>
                 or <b>create</b> a new file, with the following parameters:
-                <div class="form-inline mt-2 ml-2" data-form="create-new-lang">
+                <div class="form-inline mt-2 ml-2" data-form="create-new-translation">
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-name">Name (must be unique)</label>
                         <input data-em-para="create-lang-name" type="text" maxlength="100" id="create-lang-name" class="form-control form-control-sm mr-2 mb-2" placeholder="Name" required>
@@ -147,12 +147,12 @@ REDCapTranslatorPlugin::init($module);
                         <input data-em-para="create-lang-iso" type="text" style="max-width:8em;" maxlength="10" id="create-lang-iso" class="form-control form-control-sm mr-2 mb-2" placeholder="ISO (optional)">
                     </div>
                     <br>
-                    <button data-action="create-new-lang" class="btn btn-primary btn-sm mb-2">Create</button>
+                    <button data-action="create-new-translation" class="btn btn-primary btn-sm mb-2">Create</button>
                     <div class="invalid-feedback">Invalid input. <i>Name</i> and <i>Localized name</i> are required. <i>Name</i> must only contain letter, hyphen, and underscore characters.</div>
                 </div>
             </p>
             <h3 class="mt-2">
-                Available languages
+                Available translations
             </h3>
             <p>
                 <div class="form-inline ml-2">
@@ -172,12 +172,12 @@ REDCapTranslatorPlugin::init($module);
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="languages-body"></tbody>
+                <tbody class="translations-body"></tbody>
             </table>
-            <template data-template="languages-empty">
-                <tr><td colspan="4"><i>There are not currently any languages.</i></td>
+            <template data-template="translations-empty">
+                <tr><td colspan="4"><i>There are not currently any translations.</i></td>
             </template>
-            <template data-template="languages-row">
+            <template data-template="translations-row">
                 <tr data-version="">
                     <th scope="row">
                         <div class="text-cell">
@@ -205,10 +205,10 @@ REDCapTranslatorPlugin::init($module);
                         </div>
                     </td>
                     <td>
-                        <button data-action="language-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this language"><i class="fas fa-file-alt text-info"></i></button>
-                        <button data-action="language-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this language"><i class="fas fa-file-code"></i></button>
+                        <button data-action="translation-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this translation"><i class="fas fa-file-alt text-info"></i></button>
+                        <button data-action="translation-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this translation"><i class="fas fa-file-code"></i></button>
                         |
-                        <button data-action="language-delete" class="btn btn-light btn-sm" title="Delete this language from the server"><i class="far fa-trash-alt text-danger"></i></button>
+                        <button data-action="translation-delete" class="btn btn-light btn-sm" title="Delete this translation from the server"><i class="far fa-trash-alt text-danger"></i></button>
                     </td>
                 </tr>
             </template>
@@ -287,7 +287,7 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 On this tab, ...
             </p>
-            <h2>Convert a language INI file to a JSON file</h2>
+            <h2>Convert a language INI file to a translation JSON file</h2>
             <p>
                 This tool allows to convert a REDCap language INI file as obtained from the <i>Language File Creater/Updater</i> page or the <i>REDCap Language Library</i> to be used as the basis for further translation and managment in the <i>REDCap Translation Assistant</i>.
             </p>
@@ -299,6 +299,24 @@ REDCapTranslatorPlugin::init($module);
                         <span class="filename">Choose or drop INI file&hellip;</span>
                     </label>
                     <div class="invalid-feedback">This is not a valid language INI file.</div>
+                </div>
+            </form>
+            <p class="small">
+                Once uploaded, the converted file will start to download immediately. Any error messages are contained within the downloaded file.
+            </p>
+            <hr>
+            <h2>Convert a Multi-Language Management JSON file to a translation JSON file</h2>
+            <p>
+                This tool allows to convert a REDCap language INI file as obtained from the <i>Language File Creater/Updater</i> page or the <i>REDCap Language Library</i> to be used as the basis for further translation and managment in the <i>REDCap Translation Assistant</i>.
+            </p>
+            <form class="ml-2">
+                <div class="custom-file" data-uploader="convert-mlm-to-json">
+                    <input type="file" class="custom-file-input" id="upload-lang-mlm" accept=".json" />
+                    <label class="custom-file-label" for="upload-lang-mlm">
+                        <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
+                        <span class="filename">Choose or drop JSON file&hellip;</span>
+                    </label>
+                    <div class="invalid-feedback">This is not a valid Multi-Language Management JSON file.</div>
                 </div>
             </form>
             <p class="small">
@@ -325,9 +343,9 @@ REDCapTranslatorPlugin::init($module);
                 <button data-action="gen-metadata-json" class="btn btn-primary btn-sm mb-2"><i class="fas fa-file-code"></i> Generate</button>
             </p>
             <hr>
-            <h2>Generate a REDCap language file for in-screen translation</h2>
+            <h2>Generate a REDCap translation file for in-screen translation</h2>
             <p>
-                Provide way to upload a Language.ini or Language.json file.
+                Provide way to upload a Language.json file.
                 When no file is provided, English will be output.
                 
             </p>

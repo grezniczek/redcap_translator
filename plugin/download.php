@@ -20,8 +20,8 @@ class Downloader {
                     return self::get_package($m, $mode, $_GET["version"] ?? "");
                 case "gen-metadata-json":
                     return self::get_metadata($m, $_GET["version"], $_GET["code"] === "1", $_GET["merge"] === "1");
-                case "language-get-json":
-                case "language-get-ini":
+                case "translation-get-json":
+                case "translation-get-ini":
                     return self::get_language($m, $mode, $_GET["name"]);
                 default:
                     return self::err_unsupported;
@@ -74,26 +74,26 @@ class Downloader {
 
     private static function get_language($m, $mode, $name) {
         // Verify stored version
-        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME) ?? [];
+        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
         if (!array_key_exists($name, $stored)) return self::err_nofile;
         $lang = $stored[$name];
         // Download JSON file
-        if ($mode == "language-get-json") {
+        if ($mode == "translation-get-json") {
             // Build and serve JSON 
-            $json = REDCapTranslatorExternalModule::sanitize_language($lang);
-            $json["strings"] = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_STRINGS_PREFIX.$name);
+            $json = REDCapTranslatorExternalModule::sanitize_tranlation($lang);
+            $json["strings"] = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name);
             if (empty($json["strings"])) $json["strings"] = new \stdClass;
-            $json["annotations"] = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_ANNOTATION_PREFIX.$name);
+            $json["annotations"] = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name);
             if (empty($json["annotations"])) $json["annotations"] = new \stdClass;
             header('Content-Type: application/json; name="'.$lang["filename"].'"');
             header('Content-Disposition: attachment; filename="'.$lang["filename"].'"');
             print json_encode($json, JSON_PRETTY_PRINT);
             exit;
         }
-        if ($mode == "language-get-ini") {
+        if ($mode == "translation-get-ini") {
             $ini_name = $lang["name"].".ini";
             $localized_name = $lang["localized-name"];
-            $strings = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_STRINGS_PREFIX.$name);
+            $strings = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name);
             if (empty($strings)) {
                 print "Failed to parse JSON: " . json_last_error_msg();
                 exit;

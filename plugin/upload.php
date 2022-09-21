@@ -13,8 +13,8 @@ class REDCapTranslatorFileUploader {
         switch ($mode) {
             case "package-zip":
                 return self::uploadPackage($file, $m);
-            case "language-json":
-                return self::uploadLanguage($file, $m);
+            case "translation-json":
+                return self::uploadTranslation($file, $m);
             case "ini-to-json":
                 return self::convertIniToJson($file, $m);
         }
@@ -73,7 +73,7 @@ class REDCapTranslatorFileUploader {
      * @param array $file 
      * @param REDCapTranslatorExternalModule $m 
      */
-    private static function uploadLanguage($file, $m) {
+    private static function uploadTranslation($file, $m) {
         // Check file name
         $re = '/^.+\.[jJ][sS][oO][nN]$/m';
         if (!preg_match($re, $file["name"])) {
@@ -101,13 +101,13 @@ class REDCapTranslatorFileUploader {
         if (!empty($error)) {
             return [
                 "success" => false,
-                "error" => "Invalid language file. $error"
+                "error" => "Invalid translation file. $error"
             ];
         }
         // Purge all parts that should not be stored
-        $json = REDCapTranslatorExternalModule::sanitize_language($json);
+        $json = REDCapTranslatorExternalModule::sanitize_tranlation($json);
         // Store the file, in parts
-        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME) ?? [];
+        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
         // Created or updated?
         $verb = isset($stored[$name]) ? "Updated" : "Created";
         // Update storage
@@ -116,10 +116,10 @@ class REDCapTranslatorFileUploader {
         if (!isset($json["timestamp"])) $json["timestamp"] = "(???)";
         $json["filename"] = $file["name"];
         $stored[$name] = $json;
-        $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_NAME, $stored);
-        $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_STRINGS_PREFIX.$name, $strings);
-        $m->setSystemSetting(REDCapTranslatorExternalModule::LANGUAGES_SETTING_ANNOTATION_PREFIX.$name, $annotations);
-        $m->log("$verb language file '{$name}' ({$file["name"]}).");
+        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
+        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, $strings);
+        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, $annotations);
+        $m->log("$verb translation file '{$name}' ({$file["name"]}).");
         $json["success"] = true;
         return $json;
     }

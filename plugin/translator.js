@@ -43,8 +43,8 @@ THIS.init = function(data) {
         // Handle actions
         // General
         $('div.translator-em').on('click', handleActions);
-        // Languages 
-        $('div.translator-em [data-uploader="lang-json"] input[type="file"]').on('change', uploadLanguageJson);
+        // Translations 
+        $('div.translator-em [data-uploader="lang-json"] input[type="file"]').on('change', uploadTranslationJson);
         // Packages 
         $('div.translator-em [data-uploader="package-zip"] input[type="file"]').on('change', uploadZip);
         // Tools
@@ -54,7 +54,7 @@ THIS.init = function(data) {
 
 
         validateCreateNewForm(true);
-        renderLanguagesTab();
+        renderTranslationsTab();
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
@@ -66,7 +66,7 @@ var currentTab = '';
 
 //#endregion
 
-//#region Languages
+//#region Translations
 
 function validateCreateNewForm(e) {
     let valid = true;
@@ -75,7 +75,7 @@ function validateCreateNewForm(e) {
     const $localizedName = $('input[data-em-para="create-lang-localizedname"]');
     const $iso = $('input[data-em-para="create-lang-iso"]');
     if (e === true) {
-        $('[data-form="create-new-lang"] input').on('keyup change', validateCreateNewForm).removeClass('is-invalid').removeClass('is-valid');
+        $('[data-form="create-new-translation"] input').on('keyup change', validateCreateNewForm).removeClass('is-invalid').removeClass('is-valid');
     }
     else if (e == 'clear') {
         $name.val('').removeClass('is-valid').removeClass('is-invalid');
@@ -84,8 +84,8 @@ function validateCreateNewForm(e) {
         validateCreateNewForm();
         return;
     }
-    const $invalid = $('[data-form="create-new-lang"] .invalid-feedback');
-    const $create = $('[data-action="create-new-lang"]');
+    const $invalid = $('[data-form="create-new-translation"] .invalid-feedback');
+    const $create = $('[data-action="create-new-translation"]');
     const name = ($name.val() ?? '').toString();
     const localizedName = ($localizedName.val() ?? '').toString();
     const iso = ($iso.val() ?? '').toString();
@@ -116,28 +116,28 @@ function validateCreateNewForm(e) {
 }
 
 /**
- * Handles actions from the Languages table
+ * Handles actions from the Translations table
  * @param {string} action 
  * @param {string} name 
  */
- function handleLanguagesAction(action, name) {
+ function handleTranslationsAction(action, name) {
     log('Language action:', action, name);
     switch(action) {
-        case 'create-new-lang': {
+        case 'create-new-translation': {
             const data = validateCreateNewForm();
             if (data) {
                 JSMO.ajax(action, data)
                 .then(function(response) {
                     if (response.success) {
                         validateCreateNewForm('clear');
-                        config.languages[response.data.name] = {
+                        config.translations[response.data.name] = {
                             name: response.data.name,
                             'localized-name': response.data['localized-name'],
                             iso: response.data.iso,
                             coverage: response.data.coverage,
                             updated: response.data.timestamp
                         };
-                        renderLanguagesTab();
+                        renderTranslationsTab();
                         showToast('#translator-successToast', 'Language \'' + data.name + '\' has been created.');
                     }
                     else {
@@ -152,13 +152,13 @@ function validateCreateNewForm(e) {
             }
         }
         break;
-        case 'language-delete': {
+        case 'translation-delete': {
             JSMO.ajax(action, name)
             .then(function(response) {
                 log('Ajax: ', response)
                 if (response.success) {
-                    delete config.languages[name];
-                    renderLanguagesTab();
+                    delete config.translations[name];
+                    renderTranslationsTab();
                     showToast('#translator-successToast', 'Language \'' + name + '\' has been deleted.');
                 }
                 else {
@@ -172,8 +172,8 @@ function validateCreateNewForm(e) {
             });
         }
         break;
-        case 'language-get-ini':
-        case 'language-get-json': {
+        case 'translation-get-ini':
+        case 'translation-get-json': {
             const url = new URL(config.downloadUrl);
             url.searchParams.append('mode', action);
             url.searchParams.append('name', name);
@@ -187,23 +187,23 @@ function validateCreateNewForm(e) {
 }
 
 /**
- * Renders the 'Languages' tab.
+ * Renders the 'Translations' tab.
  */
- function renderLanguagesTab() {
+ function renderTranslationsTab() {
     // Versions
-    addVersions($('[data-nav-tab="languages"] select[data-em-para="create-lang-basedon"]'));
-    log('Updating languages:', config.languages);
+    addVersions($('[data-nav-tab="translations"] select[data-em-para="create-lang-basedon"]'));
+    log('Updating translations:', config.translations);
 
-    const $tbody = $('div.translator-em tbody.languages-body');
+    const $tbody = $('div.translator-em tbody.translations-body');
     // Remove all rows
     $tbody.children().remove();
-    const langs = Object.keys(config.languages).sort();
+    const langs = Object.keys(config.translations).sort();
     if (langs.length) {
         // Create rows
         for (const key of langs) {
-            /** @type LanguageData */
-            const language = config.languages[key];
-            const $row = getTemplate('languages-row');
+            /** @type TranslationData */
+            const language = config.translations[key];
+            const $row = getTemplate('translations-row');
             $row.attr('data-name', language.name);
             $row.find('[data-key]').each(function() {
                 const $this = $(this);
@@ -217,7 +217,7 @@ function validateCreateNewForm(e) {
         }
     }
     else {
-        $tbody.append(getTemplate('languages-empty'));
+        $tbody.append(getTemplate('translations-empty'));
     }
 }
 
@@ -225,7 +225,7 @@ function validateCreateNewForm(e) {
  * Uploads a language JSON file.
  * @param {JQuery.TriggeredEvent} event
  */
- function uploadLanguageJson(event) {
+ function uploadTranslationJson(event) {
     const $uploader = $('div.translator-em [data-uploader="lang-json"]');
     const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
@@ -250,7 +250,7 @@ function validateCreateNewForm(e) {
             $spinner.removeClass('hide');
             log('Uploading: "' + file.name + '"');
             const formData = new FormData();
-            formData.append('mode', 'language-json');
+            formData.append('mode', 'translation-json');
             formData.append('file', file, file.name);
             formData.append('redcap_csrf_token', config.csrfToken);
             $.ajax({
@@ -275,7 +275,7 @@ function validateCreateNewForm(e) {
                     if (data.success) {
                         showToast('#translator-successToast', 'File has been uploaded.');
                         log('File upload succeeded:', data);
-                        config.languages[data.name] = {
+                        config.translations[data.name] = {
                             name: data.name,
                             'localized-name': data['localized-name'],
                             iso: data.iso,
@@ -284,8 +284,8 @@ function validateCreateNewForm(e) {
                         };
                         $file.val('');
                         // @ts-ignore
-                        uploadLanguageJson(null);
-                        renderLanguagesTab();
+                        uploadTranslationJson(null);
+                        renderTranslationsTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -473,6 +473,10 @@ function uploadZip(event) {
                             size: data.size,
                         };
                         renderPackagesTab();
+                        $file.val('');
+                        // @ts-ignore
+                        uploadZip();
+                        updateToolsTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -502,9 +506,13 @@ function uploadZip(event) {
 
 //#region Tools
 
-function renderToolsTab() {
+function updateToolsTab() {
     // Versions
     addVersions($('[data-nav-tab="tools"] select[data-em-para="based-on"]'));
+}
+
+function renderToolsTab() {
+    updateToolsTab();
 }
 
 function handleToolsAction(action) {
@@ -685,11 +693,11 @@ function handleActions(event) {
         case 'gen-metadata-json':
             handleToolsAction(action);
             break;
-        case 'create-new-lang':
-        case 'language-delete':
-        case 'language-get-json':
-        case 'language-get-ini':
-            handleLanguagesAction(action, ($source.attr('data-name') ?? '').toString());
+        case 'create-new-translation':
+        case 'translation-delete':
+        case 'translation-get-json':
+        case 'translation-get-ini':
+            handleTranslationsAction(action, ($source.attr('data-name') ?? '').toString());
             break;
         // ???
         default:
@@ -848,6 +856,8 @@ function addVersions($select) {
 //#endregion
 
 })();
+
+//#region Libs
 /*!
  * FileSaver.js 2.0.4 https://github.com/eligrey/FileSaver.js
  * Copyright © 2016 Eli Grey.
@@ -855,3 +865,4 @@ function addVersions($select) {
  */
 // @ts-ignore
 (function(a,b){if("function"==typeof define&&define.amd)define([],b);else if("undefined"!=typeof exports)b();else{b(),a.FileSaver={exports:{}}.exports}})(this,function(){"use strict";function b(a,b){return"undefined"==typeof b?b={autoBom:!1}:"object"!=typeof b&&(console.warn("Deprecated: Expected third argument to be a object"),b={autoBom:!b}),b.autoBom&&/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(a.type)?new Blob(["\uFEFF",a],{type:a.type}):a}function c(a,b,c){var d=new XMLHttpRequest;d.open("GET",a),d.responseType="blob",d.onload=function(){g(d.response,b,c)},d.onerror=function(){console.error("could not download file")},d.send()}function d(a){var b=new XMLHttpRequest;b.open("HEAD",a,!1);try{b.send()}catch(a){}return 200<=b.status&&299>=b.status}function e(a){try{a.dispatchEvent(new MouseEvent("click"))}catch(c){var b=document.createEvent("MouseEvents");b.initMouseEvent("click",!0,!0,window,0,0,0,80,20,!1,!1,!1,!1,0,null),a.dispatchEvent(b)}}var f="object"==typeof window&&window.window===window?window:"object"==typeof self&&self.self===self?self:"object"==typeof global&&global.global===global?global:void 0,a=/Macintosh/.test(navigator.userAgent)&&/AppleWebKit/.test(navigator.userAgent)&&!/Safari/.test(navigator.userAgent),g=f.saveAs||("object"!=typeof window||window!==f?function(){}:"download"in HTMLAnchorElement.prototype&&!a?function(b,g,h){var i=f.URL||f.webkitURL,j=document.createElement("a");g=g||b.name||"download",j.download=g,j.rel="noopener","string"==typeof b?(j.href=b,j.origin===location.origin?e(j):d(j.href)?c(b,g,h):e(j,j.target="_blank")):(j.href=i.createObjectURL(b),setTimeout(function(){i.revokeObjectURL(j.href)},4E4),setTimeout(function(){e(j)},0))}:"msSaveOrOpenBlob"in navigator?function(f,g,h){if(g=g||f.name||"download","string"!=typeof f)navigator.msSaveOrOpenBlob(b(f,h),g);else if(d(f))c(f,g,h);else{var i=document.createElement("a");i.href=f,i.target="_blank",setTimeout(function(){e(i)})}}:function(b,d,e,g){if(g=g||open("","_blank"),g&&(g.document.title=g.document.body.innerText="downloading..."),"string"==typeof b)return c(b,d,e);var h="application/octet-stream"===b.type,i=/constructor/i.test(f.HTMLElement)||f.safari,j=/CriOS\/[\d]+/.test(navigator.userAgent);if((j||h&&i||a)&&"undefined"!=typeof FileReader){var k=new FileReader;k.onloadend=function(){var a=k.result;a=j?a:a.replace(/^data:[^;]*;/,"data:attachment/file;"),g?g.location.href=a:location=a,g=null},k.readAsDataURL(b)}else{var l=f.URL||f.webkitURL,m=l.createObjectURL(b);g?g.location=m:location.href=m,g=null,setTimeout(function(){l.revokeObjectURL(m)},4E4)}});f.saveAs=g.saveAs=g,"undefined"!=typeof module&&(module.exports=g)});
+//#endregion

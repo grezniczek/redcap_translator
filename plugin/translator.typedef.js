@@ -16,7 +16,7 @@
  *  downloadUrl: string,
  *  csrfToken: string
  *  packages: object<string,PackageData>
- *  languages: object<string, LanguageData>
+ *  translations: object<string, TranslationData>
  * }}
  */
 
@@ -30,7 +30,7 @@
  */
 
 /**
- * @typedef LanguageData
+ * @typedef TranslationData
  * @type {{
  *  name: string
  *  'localized-name': string
