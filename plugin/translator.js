@@ -51,11 +51,12 @@ THIS.init = function(data) {
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
 
 
+        validateCreateNewForm(true);
         renderLanguagesTab();
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('languages');
+        activateTab('tools');
     });
 };
 
@@ -64,6 +65,53 @@ var currentTab = '';
 //#endregion
 
 //#region Languages
+
+function validateCreateNewForm(e) {
+    let valid = true;
+    let showInvalid = false;
+    const $name = $('input[data-em-para="create-lang-name"]');
+    const $localizedName = $('input[data-em-para="create-lang-localizedname"]');
+    const $iso = $('input[data-em-para="create-lang-iso"]');
+    if (e === true) {
+        $('[data-form="create-new-lang"] input').on('keyup change', validateCreateNewForm).removeClass('is-invalid').removeClass('is-valid');
+    }
+    else if (e == 'clear') {
+        $name.val('').removeClass('is-valid').removeClass('is-invalid');
+        $localizedName.val('');
+        $iso.val('');
+        validateCreateNewForm();
+        return;
+    }
+    const $invalid = $('[data-form="create-new-lang"] .invalid-feedback');
+    const $create = $('[data-action="create-new-lang"]');
+    const name = ($name.val() ?? '').toString();
+    const localizedName = ($localizedName.val() ?? '').toString();
+    const iso = ($iso.val() ?? '').toString();
+    const nameRegex = /^[A-Za-z_-]+$/m;
+    if (nameRegex.test(name)) {
+        $name.removeClass('is-invalid').addClass('is-valid');
+    }
+    else if (name == '') {
+        $name.removeClass('is-invalid').removeClass('is-valid');
+        valid = false;
+    }
+    else {
+        $name.removeClass('is-valid').addClass('is-invalid');
+        valid = false;
+        showInvalid = true;
+    }
+    if (localizedName == '') {
+        valid = false;
+    }
+    $invalid[showInvalid ? 'show' : 'hide']();
+    $create.prop('disabled', !valid);
+    return valid ? {
+        name: name,
+        'localized-name': localizedName,
+        iso: iso,
+        strings: []
+    } : false;
+}
 
 /**
  * Handles actions from the Languages table
@@ -74,11 +122,32 @@ var currentTab = '';
     log('Language action:', action, name);
     switch(action) {
         case 'create-new-lang': {
-            const name = ($('input[data-em-para="create-lang-name"]').val() ?? '').toString();
-            const localizedName = ($('input[data-em-para="create-lang-localizedname"]').val() ?? '').toString();
-            const iso = ($('input[data-em-para="create-lang-iso"]').val() ?? '').toString();
-            
-            log('action');
+            const data = validateCreateNewForm();
+            if (data) {
+                JSMO.ajax(action, data)
+                .then(function(response) {
+                    if (response.success) {
+                        validateCreateNewForm('clear');
+                        config.languages[response.data.name] = {
+                            name: response.data.name,
+                            'localized-name': response.data['localized-name'],
+                            iso: response.data.iso,
+                            coverage: response.data.coverage,
+                            updated: response.data.timestamp
+                        };
+                        renderLanguagesTab();
+                        showToast('#translator-successToast', 'Language \'' + data.name + '\' has been created.');
+                    }
+                    else {
+                        showToast('#translator-errorToast', 'Failed to create new language \'' + data.name + '\'. Check the console for details.');
+                        error('Failed to create new language \'' + data.name + '\':', response.error);
+                    }
+                })
+                .catch(function(err) {
+                    showToast('#translator-errorToast', 'Failed to create new language \'' + data.name + '\'. Check the console for details.');
+                    error('Failed to create new language \'' + data.name + '\':', err);
+                })
+            }
         }
         break;
         case 'language-delete': {

@@ -144,10 +144,11 @@ REDCapTranslatorPlugin::init($module);
                     </div>
                     <div class="form-group">
                         <label class="sr-only" for="create-lang-iso">ISO code (such as, e.g. en-US)</label>
-                        <input data-em-para="create-lang-iso" type="text" maxlength="10" id="create-lang-iso" class="form-control form-control-sm mr-2 mb-2" placeholder="ISO (optional)">
+                        <input data-em-para="create-lang-iso" type="text" style="max-width:8em;" maxlength="10" id="create-lang-iso" class="form-control form-control-sm mr-2 mb-2" placeholder="ISO (optional)">
                     </div>
+                    <br>
                     <button data-action="create-new-lang" class="btn btn-primary btn-sm mb-2">Create</button>
-                    <div class="invalid-feedback">Invalid input. <i>Name</i> and <i>Localized name</i> are required. <i>Name</i> must only contain letter, number, hyphen and underscore characters.</div>
+                    <div class="invalid-feedback">Invalid input. <i>Name</i> and <i>Localized name</i> are required. <i>Name</i> must only contain letter, hyphen, and underscore characters.</div>
                 </div>
             </p>
             <h3 class="mt-2">

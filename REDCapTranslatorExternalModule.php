@@ -33,9 +33,59 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $link;
     }
 
+    public static function validateCreateNewLang($data) {
+        if (empty($data["name"])) {
+            return "Missing required item 'name'.";
+        }
+        $re = '/^[A-Za-z_-]+$/m';
+        if (!preg_match($re, $data["name"])) {
+            return "Item 'name' must consist of letters, hyphen, and underscore only.";
+        }
+        if (mb_strlen($data["name"]) > 100) {
+            return "Item 'name' exceeds the maximum length of 100 characters.";
+        }
+        if (empty($data["localized-name"])) {
+            return "Missing required item 'localized-name'.";
+        }
+        if (mb_strlen($data["localized-name"]) > 100) {
+            return "Item 'localized-name' exceeds the maximum length of 100 characters.";
+        }
+        if (mb_strlen($data["iso"]) > 10) {
+            return "Item 'iso' exceeds the maximum length of 10 characters.";
+        }
+        if (!is_array($data["strings"])) {
+            return "Missing or invalid required item 'strings'.";
+        }
+        return "";
+    }
 
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
+            case "create-new-lang":
+                $error = self::validateCreateNewLang($payload);
+                if (empty($error)) {
+                    $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];
+                    if (isset($store[$payload["name"]])) {
+                        $error = "A language named '{$payload["name"]}' already exists.";
+                    }
+                    else {
+                        unset($payload["strings"]);
+                        $payload["coverage"] = "TBD";
+                        $payload["timestamp"] = date("Y-m-d H:i:s");
+                        $payload["filename"] = $payload["name"].".json";
+                        $store[$payload["name"]] = $payload;
+                        $this->setSystemSetting(self::LANGUAGES_SETTING_NAME, $store);
+                        return [
+                            "success" => true,
+                            "data" => $payload
+                        ];
+                    }
+                }
+                return [
+                    "success" => false,
+                    "error" => $error
+                ];
+                break;
             case "language-delete": 
                 $name = $payload;
                 $store = $this->getSystemSetting(self::LANGUAGES_SETTING_NAME) ?? [];

@@ -46,52 +46,14 @@ class REDCapTranslatorFileUploader {
         }
         // Does it have the required keys?
         $name = $json["name"] ?? "";
-        $localized_name = $json["localized-name"] ?? "";
-        $iso = $json["iso"] ?? "";
         // Extract strings and annotations for separate storage
         $strings = $json["strings"] ?? null;
         $annotations = $json["annotations"] ?? [];
-        if (empty($name)) {
+        $error = REDCapTranslatorExternalModule::validateCreateNewLang($json);
+        if (!empty($error)) {
             return [
                 "success" => false,
-                "error" => "Invalid language file. Missing required entry 'name'."
-            ];
-        }
-        $re = '/^[A-Za-z_-]+$/m';
-        if (!preg_match($re, $name)) {
-            return [
-                "success" => false,
-                "error" => "Invalid language name. It must consist of letters, hyphen, and underscore only."
-            ];
-        }
-        if (mb_strlen($name) > 100) {
-            return [
-                "success" => false,
-                "error" => "Invalid language file. Value of 'name' exceeds maximum length of 100 characters."
-            ];
-        }
-        if (empty($localized_name)) {
-            return [
-                "success" => false,
-                "error" => "Invalid language file. Missing required entry 'localized-name'."
-            ];
-        }
-        if (mb_strlen($localized_name) > 100) {
-            return [
-                "success" => false,
-                "error" => "Invalid language file. Value of 'localized-name' exceeds maximum length of 100 characters."
-            ];
-        }
-        if (!is_array($strings)) {
-            return [
-                "success" => false,
-                "error" => "Invalid language file. Missing or invalid required entry 'strings'."
-            ];
-        }
-        if (mb_strlen($iso) > 10) {
-            return [
-                "success" => false,
-                "error" => "Invalid language file. Value of 'iso' exceeds maximum length of 10 characters."
+                "error" => "Invalid language file. $error"
             ];
         }
         // Purge all parts that should not be stored
