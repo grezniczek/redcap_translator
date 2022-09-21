@@ -9,16 +9,64 @@ class REDCapTranslatorFileUploader {
      */
     public static function upload($m) {
         $mode = $_POST["mode"] ?? "";
-        if (!in_array($mode, ["package-zip", "language-json"], true)) {
-            throw new \Exception("Invalid operation.");
-        }
         $file = $_FILES["file"] ?? [ "name" => "" ];
-        if ($mode == "package-zip") {
-            return self::uploadPackage($file, $m);
+        switch ($mode) {
+            case "package-zip":
+                return self::uploadPackage($file, $m);
+            case "language-json":
+                return self::uploadLanguage($file, $m);
+            case "ini-to-json":
+                return self::convertIniToJson($file, $m);
         }
-        else if ($mode == "language-json") {
-            return self::uploadLanguage($file, $m);
+        throw new \Exception("Invalid operation.");
+    }
+
+    /**
+     * @param array $file 
+     * @param REDCapTranslatorExternalModule $m 
+     */
+    private static function convertIniToJson($file, $m) {
+        // Check file name
+        $re = '/^(?\'name\'.*)\.[iI][nN][iI]$/m';
+        if (!preg_match($re, $file["name"], $matches)) {
+            return [
+                "success" => false,
+                "error" => "Invalid file name. It must have an INI extension."
+            ];
         }
+        $filename = $matches["name"];
+        // Can it be parsed?
+        $ini = parse_ini_file($file["tmp_name"]);
+        if (!$ini) {
+            return [
+                "success" => false,
+                "error" => "Invalid INI. The file could not be parsed."
+            ];
+        }
+        $json = [
+            "name" => $filename,
+            "localized-name" => $filename,
+            "iso" => "",
+            "timestamp" => date("Y-m-d H:i:s"),
+            "maintained-by" => [
+                [
+                    "name" => "Enter your name",
+                    "email" => "Enter your email",
+                    "institution" => "Enter your institution"
+                ]
+            ],
+            "url" => "Enter the url to a location where this file can be obtained from",
+            "strings" => count($ini) ? [] : new \stdClass,
+            "annotations" => new \stdClass
+        ];
+        foreach ($ini as $key => $text) {
+            $json["strings"][$key] = $text;
+        }
+        return [
+            "success" => true,
+            "filename" => "$filename.json",
+            "json" => json_encode($json, JSON_PRETTY_PRINT)
+        ];
     }
 
     /**
@@ -27,7 +75,7 @@ class REDCapTranslatorFileUploader {
      */
     private static function uploadLanguage($file, $m) {
         // Check file name
-        $re = '/\.[jJ][sS][oO][nN]$/m';
+        $re = '/^.+\.[jJ][sS][oO][nN]$/m';
         if (!preg_match($re, $file["name"])) {
             return [
                 "success" => false,
@@ -130,11 +178,11 @@ class REDCapTranslatorFileUploader {
 // Upload
 
 try {
-    print json_encode(REDCapTranslatorFileUploader::upload($module), JSON_FORCE_OBJECT);
+    print json_encode(REDCapTranslatorFileUploader::upload($module));
 }
 catch (\Throwable $t) {
     print json_encode(array(
         "success" => false,
         "error" => "An unexpected error occured: ".$t->getMessage()
-    ), JSON_FORCE_OBJECT);
+    ));
 }

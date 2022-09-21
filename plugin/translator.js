@@ -47,6 +47,8 @@ THIS.init = function(data) {
         $('div.translator-em [data-uploader="lang-json"] input[type="file"]').on('change', uploadLanguageJson);
         // Packages 
         $('div.translator-em [data-uploader="package-zip"] input[type="file"]').on('change', uploadZip);
+        // Tools
+        $('div.translator-em [data-uploader="convert-ini-to-json"] input[type="file"]').on('change', convertIniToJson);
         // Settings
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
 
@@ -278,8 +280,11 @@ function validateCreateNewForm(e) {
                             'localized-name': data['localized-name'],
                             iso: data.iso,
                             coverage: data.coverage,
-                            updated: data.updated
+                            updated: data.timestamp
                         };
+                        $file.val('');
+                        // @ts-ignore
+                        uploadLanguageJson(null);
                         renderLanguagesTab();
                     }
                     else {
@@ -516,6 +521,90 @@ function handleToolsAction(action) {
         showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
         // @ts-ignore
         window.location = url;
+    }
+}
+
+/**
+ * Uploads a language INI file for conversion.
+ * @param {JQuery.TriggeredEvent} event
+ */
+ function convertIniToJson(event) {
+    const $uploader = $('div.translator-em [data-uploader="convert-ini-to-json"]');
+    const $file = $uploader.find('input[type=file]');
+    const $filename = $uploader.find('span.filename');
+    const $spinner = $uploader.find('.processing-file');
+    const $progress = $uploader.find('[data-upload-progress]');
+    const $invalid = $uploader.find('.invalid-feedback');
+    $filename.html('Choose or drop INI file&hellip;');
+    $file.removeClass('is-valid').removeClass('is-invalid');
+    $spinner.addClass('hide');
+    const files = $file.prop('files')
+    if (files && files.length === 1) {
+        const file = files[0];
+        $filename.text(file.name);
+        const regex = /\.[iI][nN][iI]$/gm;
+        if (!regex.test(file.name)) {
+            $file.addClass('is-invalid');
+            event.target.setCustomValidity('Invalid');
+            $invalid.text('Invalid file name. It must have an INI extension.');
+        }
+        else {
+            $file.removeClass('is-valid').addClass('is-valid');
+            $spinner.removeClass('hide');
+            log('Uploading: "' + file.name + '"');
+            const formData = new FormData();
+            formData.append('mode', 'ini-to-json');
+            formData.append('file', file, file.name);
+            formData.append('redcap_csrf_token', config.csrfToken);
+            $.ajax({
+                type: "POST",
+                url: config.uploadUrl,
+                xhr: function () {
+                    const xhr = new XMLHttpRequest();
+                    if (xhr.upload) {
+                        xhr.upload.addEventListener('progress', function(e) {
+                            let percent = 0;
+                            if (e.lengthComputable) {
+                                percent = Math.ceil(e.loaded / e.total * 100);
+                            }
+                            $progress.text(percent.toString());
+                        }, false);
+                    }
+                    return xhr;
+                },
+                success: function (response) {
+                    $spinner.addClass('hide');
+                    const data = JSON.parse(response)
+                    if (data.success) {
+                        showToast('#translator-successToast', 'File has been converted. Download will start momentarily.');
+                        log('File upload succeeded:', data);
+                        $file.val('');
+                        // @ts-ignore
+                        convertIniToJson(null);
+                        const blob = new Blob([data.json], { type: "text/plain;charset=utf-8" })
+                        // @ts-ignore
+                        saveAs(blob, data.filename);
+                    }
+                    else {
+                        $file.addClass('is-invalid').removeClass('is-valid');
+                        event.target.setCustomValidity('Invalid');
+                        $invalid.text(data.error);
+                        error('File upload failed: ' + data.error);
+                    }
+                },
+                error: function (err) {
+                    $spinner.addClass('hide');
+                    showToast('#translator-errorToast', 'Failed to upload the file. See console for details.');
+                    error('Error', err);
+                },
+                async: true,
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                timeout: 0
+            });
+        }
     }
 }
 
@@ -759,3 +848,10 @@ function addVersions($select) {
 //#endregion
 
 })();
+/*!
+ * FileSaver.js 2.0.4 https://github.com/eligrey/FileSaver.js
+ * Copyright © 2016 Eli Grey.
+ * Licensed under MIT (https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md)
+ */
+// @ts-ignore
+(function(a,b){if("function"==typeof define&&define.amd)define([],b);else if("undefined"!=typeof exports)b();else{b(),a.FileSaver={exports:{}}.exports}})(this,function(){"use strict";function b(a,b){return"undefined"==typeof b?b={autoBom:!1}:"object"!=typeof b&&(console.warn("Deprecated: Expected third argument to be a object"),b={autoBom:!b}),b.autoBom&&/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(a.type)?new Blob(["\uFEFF",a],{type:a.type}):a}function c(a,b,c){var d=new XMLHttpRequest;d.open("GET",a),d.responseType="blob",d.onload=function(){g(d.response,b,c)},d.onerror=function(){console.error("could not download file")},d.send()}function d(a){var b=new XMLHttpRequest;b.open("HEAD",a,!1);try{b.send()}catch(a){}return 200<=b.status&&299>=b.status}function e(a){try{a.dispatchEvent(new MouseEvent("click"))}catch(c){var b=document.createEvent("MouseEvents");b.initMouseEvent("click",!0,!0,window,0,0,0,80,20,!1,!1,!1,!1,0,null),a.dispatchEvent(b)}}var f="object"==typeof window&&window.window===window?window:"object"==typeof self&&self.self===self?self:"object"==typeof global&&global.global===global?global:void 0,a=/Macintosh/.test(navigator.userAgent)&&/AppleWebKit/.test(navigator.userAgent)&&!/Safari/.test(navigator.userAgent),g=f.saveAs||("object"!=typeof window||window!==f?function(){}:"download"in HTMLAnchorElement.prototype&&!a?function(b,g,h){var i=f.URL||f.webkitURL,j=document.createElement("a");g=g||b.name||"download",j.download=g,j.rel="noopener","string"==typeof b?(j.href=b,j.origin===location.origin?e(j):d(j.href)?c(b,g,h):e(j,j.target="_blank")):(j.href=i.createObjectURL(b),setTimeout(function(){i.revokeObjectURL(j.href)},4E4),setTimeout(function(){e(j)},0))}:"msSaveOrOpenBlob"in navigator?function(f,g,h){if(g=g||f.name||"download","string"!=typeof f)navigator.msSaveOrOpenBlob(b(f,h),g);else if(d(f))c(f,g,h);else{var i=document.createElement("a");i.href=f,i.target="_blank",setTimeout(function(){e(i)})}}:function(b,d,e,g){if(g=g||open("","_blank"),g&&(g.document.title=g.document.body.innerText="downloading..."),"string"==typeof b)return c(b,d,e);var h="application/octet-stream"===b.type,i=/constructor/i.test(f.HTMLElement)||f.safari,j=/CriOS\/[\d]+/.test(navigator.userAgent);if((j||h&&i||a)&&"undefined"!=typeof FileReader){var k=new FileReader;k.onloadend=function(){var a=k.result;a=j?a:a.replace(/^data:[^;]*;/,"data:attachment/file;"),g?g.location.href=a:location=a,g=null},k.readAsDataURL(b)}else{var l=f.URL||f.webkitURL,m=l.createObjectURL(b);g?g.location=m:location.href=m,g=null,setTimeout(function(){l.revokeObjectURL(m)},4E4)}});f.saveAs=g.saveAs=g,"undefined"!=typeof module&&(module.exports=g)});

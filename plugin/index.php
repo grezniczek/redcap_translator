@@ -287,7 +287,25 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 On this tab, ...
             </p>
-            <h2>Generate a REDCap Strings Metadata &amp; Annotation file</h2>
+            <h2>Convert a language INI file to a JSON file</h2>
+            <p>
+                This tool allows to convert a REDCap language INI file as obtained from the <i>Language File Creater/Updater</i> page or the <i>REDCap Language Library</i> to be used as the basis for further translation and managment in the <i>REDCap Translation Assistant</i>.
+            </p>
+            <form class="ml-2">
+                <div class="custom-file" data-uploader="convert-ini-to-json">
+                    <input type="file" class="custom-file-input" id="upload-lang-ini" accept=".ini" />
+                    <label class="custom-file-label" for="upload-lang-ini">
+                        <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
+                        <span class="filename">Choose or drop INI file&hellip;</span>
+                    </label>
+                    <div class="invalid-feedback">This is not a valid language INI file.</div>
+                </div>
+            </form>
+            <p class="small">
+                Once uploaded, the converted file will start to download immediately. Any error messages are contained within the downloaded file.
+            </p>
+            <hr>
+            <h2>Generate a REDCap strings metadata &amp; annotation file</h2>
             <p>
                 More stuff for JSON generation...
             </p>
@@ -307,7 +325,7 @@ REDCapTranslatorPlugin::init($module);
                 <button data-action="gen-metadata-json" class="btn btn-primary btn-sm mb-2"><i class="fas fa-file-code"></i> Generate</button>
             </p>
             <hr>
-            <h2>Generate a REDCap language file for In-Screen translation</h2>
+            <h2>Generate a REDCap language file for in-screen translation</h2>
             <p>
                 Provide way to upload a Language.ini or Language.json file.
                 When no file is provided, English will be output.
