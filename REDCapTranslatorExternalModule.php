@@ -235,6 +235,15 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
+    /**
+     * Generates a hash value of a string that is compatible with MLM
+     * @param string $text 
+     * @return string 
+     */
+    public static function get_hash($text) {
+        return substr(sha1($text), 0, 6);
+    }
+
     public static function generate_metadata($doc_id, $version, $module_version, $code, $previous = []) {
         $strings = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
         $json = [
@@ -258,7 +267,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             // Normalize string before hashing
             $text = self::convert_ini_whitespace($text);
             $annotation = ""; // TODO - merge from prev
-            $hash = sha1($text);
+            $hash = self::get_hash($text);
             $new = false; // TODO - based on prev file
             $changed = false; // TODO - based on prev file
             $html = self::contains_html($text); // TODO - or'ed with prev file
