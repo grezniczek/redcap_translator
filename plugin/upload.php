@@ -17,8 +17,81 @@ class REDCapTranslatorFileUploader {
                 return self::uploadTranslation($file, $m);
             case "ini-to-json":
                 return self::convertIniToJson($file, $m);
+            case "mlm-to-json":
+                return self::convertMlmToJson($file, $m);
         }
         throw new \Exception("Invalid operation.");
+    }
+
+    /**
+     * @param array $file 
+     * @param REDCapTranslatorExternalModule $m 
+     */
+    private static function convertMlmToJson($file, $m) {
+        // Check file name
+        $re = '/^.*\.[jJ][sS][oO][nN]$/m';
+        if (!preg_match($re, $file["name"])) {
+            return [
+                "success" => false,
+                "error" => "Invalid file name. It must have a JSON extension."
+            ];
+        }
+        // Can it be parsed?
+        $content = file_get_contents($file["tmp_name"]);
+        $mlm = json_decode($content, true);
+        if (!$mlm) {
+            return [
+                "success" => false,
+                "error" => "Invalid JSON. The file could not be parsed."
+            ];
+        }
+        if (!isset($mlm["key"]) || !isset($mlm["display"]) || !isset($mlm["uiTranslations"]) || !is_array($mlm["uiTranslations"])) {
+            return [
+                "success" => false,
+                "error" => "This is not a valid MLM language file. Missing one or more of the required items 'display', 'key', and 'uiTranslations'."
+            ];
+        }
+        $filter = function($in) {
+            $out = [];
+            foreach (mb_str_split($in) as $char) {
+                if (preg_match('/[A-Za-z-_]/', $char)) {
+                    $out[] = $char;
+                }
+            }
+            return join("", $out);
+        };
+        $name = $filter($mlm["display"]);
+        $json = [
+            "name" => $name,
+            "localized-name" => $mlm["display"],
+            "iso" => mb_substr($mlm["key"], 0, 10),
+            "timestamp" => $mlm["timestamp"] ?? date("Y-m-d H:i:s"),
+            "maintained-by" => [
+                [
+                    "name" => "Name",
+                    "email" => "Email",
+                    "institution" => "Institution"
+                ]
+            ],
+            "url" => "",
+            "strings" => count($mlm["uiTranslations"]) ? [] : new \stdClass,
+            "annotations" => new \stdClass
+        ];
+        foreach ($mlm["uiTranslations"] as $item) {
+            if (isset($item["id"]) && !starts_with($item["id"], "_valtype_") && isset($item["translation"])) {
+                $json["strings"][$item["id"]] = [
+                    "do-not-translate" => false,
+                    "translations" => [
+                        ($item["hash"] ?? "") => $item["translation"]
+                    ]
+                ];
+            }
+        }
+        return [
+            "success" => true,
+            "filename" => "$name.json",
+            "json" => json_encode($json, JSON_PRETTY_PRINT)
+        ];
     }
 
     /**
@@ -50,12 +123,12 @@ class REDCapTranslatorFileUploader {
             "timestamp" => date("Y-m-d H:i:s"),
             "maintained-by" => [
                 [
-                    "name" => "Enter your name",
-                    "email" => "Enter your email",
-                    "institution" => "Enter your institution"
+                    "name" => "Name",
+                    "email" => "Email",
+                    "institution" => "Institution"
                 ]
             ],
-            "url" => "Enter the url to a location where this file can be obtained from",
+            "url" => "",
             "strings" => count($ini) ? [] : new \stdClass,
             "annotations" => new \stdClass
         ];

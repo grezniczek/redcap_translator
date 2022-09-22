@@ -307,14 +307,14 @@ REDCapTranslatorPlugin::init($module);
             <hr>
             <h2>Convert a Multi-Language Management JSON file to a translation JSON file</h2>
             <p>
-                This tool allows to convert a REDCap language INI file as obtained from the <i>Language File Creater/Updater</i> page or the <i>REDCap Language Library</i> to be used as the basis for further translation and managment in the <i>REDCap Translation Assistant</i>.
+                This tool allows to convert a REDCap Multi-Language Management language file to be used as the basis for further translation and managment in the <i>REDCap Translation Assistant</i>.
             </p>
             <form class="ml-2">
                 <div class="custom-file" data-uploader="convert-mlm-to-json">
                     <input type="file" class="custom-file-input" id="upload-lang-mlm" accept=".json" />
                     <label class="custom-file-label" for="upload-lang-mlm">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
-                        <span class="filename">Choose or drop JSON file&hellip;</span>
+                        <span class="filename">Choose or drop MLM JSON file&hellip;</span>
                     </label>
                     <div class="invalid-feedback">This is not a valid Multi-Language Management JSON file.</div>
                 </div>

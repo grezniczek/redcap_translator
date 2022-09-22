@@ -49,6 +49,7 @@ THIS.init = function(data) {
         $('div.translator-em [data-uploader="package-zip"] input[type="file"]').on('change', uploadZip);
         // Tools
         $('div.translator-em [data-uploader="convert-ini-to-json"] input[type="file"]').on('change', convertIniToJson);
+        $('div.translator-em [data-uploader="convert-mlm-to-json"] input[type="file"]').on('change', convertMlmToJson);
         // Settings
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
 
@@ -536,7 +537,7 @@ function handleToolsAction(action) {
  * Uploads a language INI file for conversion.
  * @param {JQuery.TriggeredEvent} event
  */
- function convertIniToJson(event) {
+function convertIniToJson(event) {
     const $uploader = $('div.translator-em [data-uploader="convert-ini-to-json"]');
     const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
@@ -550,7 +551,7 @@ function handleToolsAction(action) {
     if (files && files.length === 1) {
         const file = files[0];
         $filename.text(file.name);
-        const regex = /\.[iI][nN][iI]$/gm;
+        const regex = /.+\.[iI][nN][iI]$/gm;
         if (!regex.test(file.name)) {
             $file.addClass('is-invalid');
             event.target.setCustomValidity('Invalid');
@@ -589,6 +590,89 @@ function handleToolsAction(action) {
                         $file.val('');
                         // @ts-ignore
                         convertIniToJson(null);
+                        const blob = new Blob([data.json], { type: "text/plain;charset=utf-8" })
+                        // @ts-ignore
+                        saveAs(blob, data.filename);
+                    }
+                    else {
+                        $file.addClass('is-invalid').removeClass('is-valid');
+                        event.target.setCustomValidity('Invalid');
+                        $invalid.text(data.error);
+                        error('File upload failed: ' + data.error);
+                    }
+                },
+                error: function (err) {
+                    $spinner.addClass('hide');
+                    showToast('#translator-errorToast', 'Failed to upload the file. See console for details.');
+                    error('Error', err);
+                },
+                async: true,
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                timeout: 0
+            });
+        }
+    }
+}
+/**
+ * Uploads a MLM language file for conversion.
+ * @param {JQuery.TriggeredEvent} event
+ */
+function convertMlmToJson(event) {
+    const $uploader = $('div.translator-em [data-uploader="convert-mlm-to-json"]');
+    const $file = $uploader.find('input[type=file]');
+    const $filename = $uploader.find('span.filename');
+    const $spinner = $uploader.find('.processing-file');
+    const $progress = $uploader.find('[data-upload-progress]');
+    const $invalid = $uploader.find('.invalid-feedback');
+    $filename.html('Choose or drop MLM JSON file&hellip;');
+    $file.removeClass('is-valid').removeClass('is-invalid');
+    $spinner.addClass('hide');
+    const files = $file.prop('files')
+    if (files && files.length === 1) {
+        const file = files[0];
+        $filename.text(file.name);
+        const regex = /.+\.[jJ][sS][oO][nN]$/gm;
+        if (!regex.test(file.name)) {
+            $file.addClass('is-invalid');
+            event.target.setCustomValidity('Invalid');
+            $invalid.text('Invalid file name. It must have a JSON extension.');
+        }
+        else {
+            $file.removeClass('is-valid').addClass('is-valid');
+            $spinner.removeClass('hide');
+            log('Uploading: "' + file.name + '"');
+            const formData = new FormData();
+            formData.append('mode', 'mlm-to-json');
+            formData.append('file', file, file.name);
+            formData.append('redcap_csrf_token', config.csrfToken);
+            $.ajax({
+                type: "POST",
+                url: config.uploadUrl,
+                xhr: function () {
+                    const xhr = new XMLHttpRequest();
+                    if (xhr.upload) {
+                        xhr.upload.addEventListener('progress', function(e) {
+                            let percent = 0;
+                            if (e.lengthComputable) {
+                                percent = Math.ceil(e.loaded / e.total * 100);
+                            }
+                            $progress.text(percent.toString());
+                        }, false);
+                    }
+                    return xhr;
+                },
+                success: function (response) {
+                    $spinner.addClass('hide');
+                    const data = JSON.parse(response)
+                    if (data.success) {
+                        showToast('#translator-successToast', 'File has been converted. Download will start momentarily.');
+                        log('File upload succeeded:', data);
+                        $file.val('');
+                        // @ts-ignore
+                        convertMlmToJson(null);
                         const blob = new Blob([data.json], { type: "text/plain;charset=utf-8" })
                         // @ts-ignore
                         saveAs(blob, data.filename);
