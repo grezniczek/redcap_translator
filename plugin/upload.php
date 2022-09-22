@@ -15,6 +15,8 @@ class REDCapTranslatorFileUploader {
                 return self::uploadPackage($file, $m);
             case "translation-json":
                 return self::uploadTranslation($file, $m);
+            case "metadata-json":
+                return self::uploadMetadataFile($file, $_POST["merge"], $m);
             case "ini-to-json":
                 return self::convertIniToJson($file, $m);
             case "mlm-to-json":
@@ -65,7 +67,7 @@ class REDCapTranslatorFileUploader {
             "name" => $name,
             "localized-name" => $mlm["display"],
             "iso" => mb_substr($mlm["key"], 0, 10),
-            "timestamp" => $mlm["timestamp"] ?? date("Y-m-d H:i:s"),
+            "timestamp" => $mlm["timestamp"] ?? REDCapTranslatorExternalModule::get_current_timestamp(),
             "maintained-by" => [
                 [
                     "name" => "Name",
@@ -120,7 +122,7 @@ class REDCapTranslatorFileUploader {
             "name" => $filename,
             "localized-name" => $filename,
             "iso" => "",
-            "timestamp" => date("Y-m-d H:i:s"),
+            "timestamp" => REDCapTranslatorExternalModule::get_current_timestamp(),
             "maintained-by" => [
                 [
                     "name" => "Name",
@@ -178,7 +180,7 @@ class REDCapTranslatorFileUploader {
             ];
         }
         // Purge all parts that should not be stored
-        $json = REDCapTranslatorExternalModule::sanitize_tranlation($json);
+        $json = REDCapTranslatorExternalModule::sanitize_translation($json);
         // Store the file, in parts
         $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
         // Created or updated?
@@ -195,6 +197,69 @@ class REDCapTranslatorFileUploader {
         $m->log("$verb translation file '{$name}' ({$file["name"]}).");
         $json["success"] = true;
         return $json;
+    }
+
+    private static function fail($msg) {
+        return [
+            "success" => false,
+            "error" => $msg
+        ];
+    }
+
+    private static function ok($data) {
+        return [
+            "success" => true,
+            "data" => $data
+        ];
+    }
+
+    /**
+     * @param array $file 
+     * @param REDCapTranslatorExternalModule $m 
+     */
+    private static function uploadMetadataFile($file, $merge, $m) {
+        // Check file name
+        $re = '/^.+\.[jJ][sS][oO][nN]$/m';
+        if (!preg_match($re, $file["name"])) {
+            return self::fail("Invalid file name. It must have a JSON extension.");
+        }
+        // Check merge mode
+        if (!in_array($merge, ["keep","overwrite"], true)) {
+            return self::fail("Invalid merge mode.");
+        }
+        // Can it be parsed?
+        $content = file_get_contents($file["tmp_name"]);
+        $json = json_decode($content, JSON_OBJECT_AS_ARRAY);
+        if (!$json) {
+            $err = json_last_error_msg();
+            return self::fail("Invalid JSON. The file could not be parsed ($err).");
+        }
+        // Check if this is a valid metadata file
+        if (!preg_match('/^\d+\.\d+\.\d+$/m', $json["version"] ?? "")) {
+            return self::fail("Missing or invalid item 'version'.");
+        }
+        if (!REDCapTranslatorExternalModule::validate_and_sanitize_metadata($json, $m->VERSION)) {
+            return self::fail("This does not appear to be a valid metadata file.");
+        }
+
+        
+
+        // Store
+
+
+
+
+        $n_strings = count($json["strings"] ?? []);
+        $n_annotations = count($json["annotations"] ?? []);
+        $code = isset($json["stats"]["n-php-files"]);
+
+        return self::ok([
+            "version" => $json["version"],
+            "updated" => $json["timestamp"],
+            "strings" => $n_strings,
+            "annotations" => $n_annotations,
+            "code" => $code,
+        ]);
     }
 
     /**

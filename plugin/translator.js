@@ -44,7 +44,9 @@ THIS.init = function(data) {
         // General
         $('div.translator-em').on('click', handleActions);
         // Translations 
-        $('div.translator-em [data-uploader="lang-json"] input[type="file"]').on('change', uploadTranslationJson);
+        $('div.translator-em [data-uploader="translation-json"] input[type="file"]').on('change', uploadTranslationJson);
+        // Metadata 
+        $('div.translator-em [data-uploader="metadata-json"] input[type="file"]').on('change', uploadMetadataJson);
         // Packages 
         $('div.translator-em [data-uploader="package-zip"] input[type="file"]').on('change', uploadZip);
         // Tools
@@ -56,10 +58,11 @@ THIS.init = function(data) {
 
         validateCreateNewForm(true);
         renderTranslationsTab();
+        renderMetadataTab();
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('tools');
+        activateTab('metadata');
     });
 };
 
@@ -120,8 +123,9 @@ function validateCreateNewForm(e) {
  * Handles actions from the Translations table
  * @param {string} action 
  * @param {string} name 
+ * @param {string} basedOn
  */
- function handleTranslationsAction(action, name) {
+ function handleTranslationsAction(action, name, basedOn) {
     log('Language action:', action, name);
     switch(action) {
         case 'create-new-translation': {
@@ -174,14 +178,18 @@ function validateCreateNewForm(e) {
         }
         break;
         case 'translation-get-ini':
-        case 'translation-get-json': {
+        case 'translation-get-json':
+        case 'translation-get-in-screen-ini': {
             const url = new URL(config.downloadUrl);
             url.searchParams.append('mode', action);
             url.searchParams.append('name', name);
-            log('Requesting download from:',url);
+            url.searchParams.append('based-on', basedOn);
+            log('Requesting download from:', url);
             showToast('#translator-successToast', 'Initiated download of language \'' + name + '\' file. The download should start momentarily.');
-            // @ts-ignore
-            window.location = url;
+            setTimeout(() => {
+                // @ts-ignore
+                window.location = url;
+            }, 400);
         }
         break;
     }
@@ -192,7 +200,7 @@ function validateCreateNewForm(e) {
  */
  function renderTranslationsTab() {
     // Versions
-    addVersions($('[data-nav-tab="translations"] select[data-em-para="create-lang-basedon"]'));
+    addVersions($('[data-nav-tab="translations"] select[data-em-para="translation-based-on"]'), sortByVersion(config.metadataFiles));
     log('Updating translations:', config.translations);
 
     const $tbody = $('div.translator-em tbody.translations-body');
@@ -227,7 +235,7 @@ function validateCreateNewForm(e) {
  * @param {JQuery.TriggeredEvent} event
  */
  function uploadTranslationJson(event) {
-    const $uploader = $('div.translator-em [data-uploader="lang-json"]');
+    const $uploader = $('div.translator-em [data-uploader="translation-json"]');
     const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
     const $spinner = $uploader.find('.processing-file');
@@ -316,25 +324,6 @@ function validateCreateNewForm(e) {
 
 //#region Packages
 
-function sortPackages() {
-    const unsorted = {};
-    for (const version of Object.keys(config.packages)) {
-        const parts = version.split('.');
-        const numVersion = 
-            Number.parseInt(parts[0]) * 10000 +
-            Number.parseInt(parts[1]) * 100 +
-            Number.parseInt(parts[2]);
-        unsorted[numVersion] = version;
-    }
-    /** @type {Array<string>} */
-    const sorted = [];
-    for (const sortKey of Object.keys(unsorted).sort().reverse()) {
-        const key = unsorted[sortKey];
-        sorted.push(key);
-    }
-    return sorted;
-}
-
 /**
  * Renders the table on the 'Packages' tab.
  */
@@ -343,10 +332,10 @@ function renderPackagesTab() {
     const $tbody = $('div.translator-em tbody.packages-body');
     // Remove all rows
     $tbody.children().remove();
-    const keys = sortPackages();
+    const keys = sortByVersion(config.packages);
     if (keys.length) {
         // Create rows
-        for (const key of sortPackages()) {
+        for (const key of keys) {
             /** @type PackageData */
             const package = config.packages[key];
             const $row = getTemplate('packages-row');
@@ -388,6 +377,7 @@ function handlePackagesAction(action, version) {
                 if (response.success) {
                     delete config.packages[version];
                     renderPackagesTab();
+                    updateMetadataTab();
                     showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
                 }
                 else {
@@ -477,7 +467,7 @@ function uploadZip(event) {
                         $file.val('');
                         // @ts-ignore
                         uploadZip();
-                        updateToolsTab();
+                        updateMetadataTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -505,32 +495,159 @@ function uploadZip(event) {
 
 //#endregion
 
-//#region Tools
+//#region Metadata
 
-function updateToolsTab() {
+
+function updateMetadataTab() {
     // Versions
-    addVersions($('[data-nav-tab="tools"] select[data-em-para="based-on"]'));
+    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-based-on"]'), sortByVersion(config.packages));
+    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-merge-from"]'), sortByVersion(config.metadataFiles));
 }
 
-function renderToolsTab() {
-    updateToolsTab();
+function renderMetadataTab() {
+    updateMetadataTab();
+    // Table
+    const $tbody = $('div.translator-em tbody.metadata-body');
+    // Remove all rows
+    $tbody.children().remove();
+    const metadatas = sortByVersion(config.metadataFiles);
+    if (metadatas.length) {
+        // Create rows
+        for (const key of metadatas) {
+            /** @type MetadataFileData */
+            const metadata = config.metadataFiles[key];
+            const $row = getTemplate('metadata-row');
+            $row.attr('data-version', key);
+            $row.find('[data-key]').each(function() {
+                const $this = $(this);
+                const name = $this.attr('data-key') ?? '';
+                if (['version','updated','strings','annotations'].includes(name)) {
+                    $this.text(metadata[name]);
+                }
+                else if (name == 'code') {
+                    $this.html(metadata.code ? '<i class="fas fa-code"></i>' : '');
+                }
+            });
+            $row.find('[data-action]').attr('data-version', key);
+            $tbody.append($row)
+        }
+    }
+    else {
+        $tbody.append(getTemplate('metadata-empty'));
+    }
 }
 
-function handleToolsAction(action) {
+function handleMetadataAction(action) {
     if (action == 'gen-metadata-json') {
-        const basedOn = ($('[data-nav-tab="tools"] select[data-em-para="based-on"]').val() ?? '').toString();
-        const withCode = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code"]').prop('checked') == true;
-        const withCodeBrute = $('[data-nav-tab="tools"] input[data-em-para="gen-json-with-code-brute"]').prop('checked') == true;
+        const basedOn = ($('select[data-em-para="gen-metadata-based-on"]').val() ?? '').toString();
+        const mergeFrom = ($('select[data-em-para="gen-metadata-merge-from"]').val() ?? '').toString();
+        const addCode = $('input[data-em-para="gen-metadata-add-code"]').prop('checked') == true;
         const url = new URL(config.downloadUrl);
         url.searchParams.append('mode', action);
         url.searchParams.append('version', basedOn);
-        url.searchParams.append('code', withCode ? '1' : '0');
-        url.searchParams.append('brute', withCodeBrute ? '1' : '0');
+        url.searchParams.append('previous', mergeFrom);
+        url.searchParams.append('code', addCode ? '1' : '0');
         log('Requestiong download from:',url);
         showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
-        // @ts-ignore
-        window.location = url;
+        setTimeout(() => {
+            // @ts-ignore
+            window.location = url;
+        }, 400);
     }
+}
+
+/**
+ * Uploads a language JSON file.
+ * @param {JQuery.TriggeredEvent} event
+ */
+function uploadMetadataJson(event) {
+    const $uploader = $('div.translator-em [data-uploader="metadata-json"]');
+    const $file = $uploader.find('input[type=file]');
+    const $filename = $uploader.find('span.filename');
+    const $spinner = $uploader.find('.processing-file');
+    const $progress = $uploader.find('[data-upload-progress]');
+    const $invalid = $uploader.find('.invalid-feedback');
+    $filename.html('Choose or drop a metadata file&hellip;');
+    $file.removeClass('is-valid').removeClass('is-invalid');
+    $spinner.addClass('hide');
+    const files = $file.prop('files')
+    if (files && files.length === 1) {
+        const file = files[0];
+        $filename.text(file.name);
+        const regex = /\.[jJ][sS][oO][nN]$/gm;
+        if (!regex.test(file.name)) {
+            $file.addClass('is-invalid');
+            event.target.setCustomValidity('Invalid');
+            $invalid.text('Invalid file name. It must have a JSON extension.');
+        }
+        else {
+            $file.removeClass('is-valid').addClass('is-valid');
+            $spinner.removeClass('hide');
+            log('Uploading: "' + file.name + '"');
+            const formData = new FormData();
+            formData.append('mode', 'metadata-json');
+            formData.append('merge', ($('input[name="upload-metadata-option"]').val() ?? 'keep').toString());
+            formData.append('file', file, file.name);
+            formData.append('redcap_csrf_token', config.csrfToken);
+            $.ajax({
+                type: "POST",
+                url: config.uploadUrl,
+                xhr: function () {
+                    const xhr = new XMLHttpRequest();
+                    if (xhr.upload) {
+                        xhr.upload.addEventListener('progress', function(e) {
+                            let percent = 0;
+                            if (e.lengthComputable) {
+                                percent = Math.ceil(e.loaded / e.total * 100);
+                            }
+                            $progress.text(percent.toString());
+                        }, false);
+                    }
+                    return xhr;
+                },
+                success: function (raw) {
+                    $spinner.addClass('hide');
+                    const response = JSON.parse(raw)
+                    if (response.success) {
+                        showToast('#translator-successToast', 'File has been uploaded.');
+                        log('File upload succeeded:', response);
+                        const data = response.data;
+                        config.metadataFiles[data.version] = data;
+                        $file.val('');
+                        // @ts-ignore
+                        uploadMetadataJson(null);
+                        renderMetadataTab();
+                    }
+                    else {
+                        $file.addClass('is-invalid').removeClass('is-valid');
+                        event.target.setCustomValidity('Invalid');
+                        $invalid.text(response.error);
+                        error('File upload failed: ' + response.error);
+                    }
+                },
+                error: function (err) {
+                    $spinner.addClass('hide');
+                    showToast('#translator-errorToast', 'Failed to upload the file. See console for details.');
+                    error('Error', err);
+                },
+                async: true,
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                timeout: 0
+            });
+
+        }
+    }
+}
+
+//#endregion
+
+//#region Tools
+
+function renderToolsTab() {
+
 }
 
 /**
@@ -757,36 +874,44 @@ function renderSettingsTab() {
  * @param {JQuery.TriggeredEvent} event 
  */
 function handleActions(event) {
-    var $source = $(event.target)
-    var action = $source.attr('data-action')
+    let $source = $(event.target)
+    let action = $source.attr('data-action')
     if (!action) {
         $source = $source.parents('[data-action]')
         action = $source.attr('data-action')
     }
     if (!action || $source.prop('disabled')) return
     switch (action) {
-        case 'main-nav':
-            var target = $source.attr('data-nav-target') ?? ''
+        case 'main-nav': {
+            const target = $source.attr('data-nav-target') ?? ''
             activateTab(target)
-            break;
+        }
+        break;
         case 'package-get-strings':
         case 'package-get-zip':
-        case 'package-delete':
+        case 'package-delete': {
             handlePackagesAction(action, ($source.attr('data-version') ?? '').toString());
-            break;
-        case 'gen-metadata-json':
-            handleToolsAction(action);
-            break;
+        }
+        break;
+        case 'gen-metadata-json': {
+            handleMetadataAction(action);
+        }
+        break;
         case 'create-new-translation':
         case 'translation-delete':
         case 'translation-get-json':
         case 'translation-get-ini':
-            handleTranslationsAction(action, ($source.attr('data-name') ?? '').toString());
-            break;
+        case 'translation-get-in-screen-ini': {
+            const name = ($source.attr('data-name') ?? '').toString();
+            const basedOn = ($('[data-em-para="translation-based-on"]').val() ?? '').toString();
+            handleTranslationsAction(action, name, basedOn);
+        }
+        break;
         // ???
-        default:
+        default: {
             warn('Unknown action: ' + action)
-            break
+        }
+        break
     }
 }
 
@@ -888,6 +1013,25 @@ function log_print(ln, mode, args) {
 
 //#region Helpers
 
+function sortByVersion(source) {
+    const unsorted = {};
+    for (const version of Object.keys(source)) {
+        const parts = version.split('.');
+        const numVersion = 
+            Number.parseInt(parts[0]) * 10000 +
+            Number.parseInt(parts[1]) * 100 +
+            Number.parseInt(parts[2]);
+        unsorted[numVersion] = version;
+    }
+    /** @type {Array<string>} */
+    const sorted = [];
+    for (const sortKey of Object.keys(unsorted).sort().reverse()) {
+        const key = unsorted[sortKey];
+        sorted.push(key);
+    }
+    return sorted;
+}
+
 /**
  * Shows a message in a toast
  * @param {string} selector 
@@ -925,16 +1069,24 @@ function resolveJSMO(name) {
     return jsmo;
 }
 
-function addVersions($select) {
-    for (const key of sortPackages()) {
+/**
+ * 
+ * @param {JQuery<HTMLElement>} $select 
+ * @param {string[]} source 
+ */
+function addVersions($select, source) {
+    $select.html('');
+    for (const key of source) {
         const $opt = $('<option></option>');
         $opt.prop('selected', key == 'current');
         $opt.val(key);
         $opt.text(key);
         $select.append($opt);
     }
-    // @ts-ignore
-    $select.select2();
+    if (!$select[0].hasAttribute('data-select2-id')) {
+        // @ts-ignore
+        $select.select2();
+    }
 }
 
 //#endregion

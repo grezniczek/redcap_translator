@@ -26,6 +26,9 @@
     margin-top: 0.2rem;
 }
 
+.translator-em .select2-container {
+    min-width: 6em !important;
+}
 
 
 .switch {

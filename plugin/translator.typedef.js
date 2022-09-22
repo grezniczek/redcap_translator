@@ -15,6 +15,7 @@
  *  uploadUrl: string
  *  downloadUrl: string,
  *  csrfToken: string
+ *  metadataFiles: object<string,MetadataFileData>
  *  packages: object<string,PackageData>
  *  translations: object<string, TranslationData>
  * }}
@@ -26,6 +27,17 @@
  *  version: string
  *  upgrade: boolean
  *  size: Number
+ * }}
+ */
+
+/**
+ * @typedef MetadataFileData
+ * @type {{
+ *  version: string
+ *  updated: string
+ *  strings: Number
+ *  annotations: Number
+ *  code: boolean
  * }}
  */
 

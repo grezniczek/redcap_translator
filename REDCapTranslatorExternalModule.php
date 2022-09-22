@@ -13,6 +13,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
     public const PACKAGES_SETTING_NAME = "packages";
+    public const METADATAFILES_SETTING_NAME = "metadata-files";
     public const TRANSLATIONS_SETTING_NAME = "translations";
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
@@ -71,7 +72,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     else {
                         unset($payload["strings"]);
                         $payload["coverage"] = "TBD";
-                        $payload["timestamp"] = date("Y-m-d H:i:s");
+                        $payload["timestamp"] = self::get_current_timestamp();
                         $payload["filename"] = $payload["name"].".json";
                         $store[$payload["name"]] = $payload;
                         $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
@@ -167,7 +168,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
     // Purge all parts that should not be stored
-    public static function sanitize_tranlation($json) {
+    public static function sanitize_translation($json) {
         foreach (array_keys($json) as $key) {
             if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url"], true)) {
                 unset($json[$key]);
@@ -244,17 +245,41 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return substr(sha1($text), 0, 6);
     }
 
-    public static function generate_metadata($doc_id, $version, $module_version, $code, $previous = []) {
+    /**
+     * Gets the 'generator' content for metadata files
+     * @param string $module_version 
+     * @return array 
+     */
+    private static function get_generator($module_version) {
+        return [
+            "name" => "REDCap Translation Assistant",
+            "version" => $module_version,
+            "author" => "Dr. Günther Rezniczek",
+            "url" => "https://github.com/grezniczek/redcap_translator",
+        ];
+    }
+
+    /**
+     * Gets the current time formatted as YYYY-MM-DD HH:MM:SS
+     * @return string
+     */
+    public static function get_current_timestamp() {
+        return date("Y-m-d H:i:s");
+    }
+
+    public static function validate_and_sanitize_metadata(&$json, $module_version) {
+        // TODO
+
+        return true;
+    }
+
+    public static function generate_metadata($doc_id, $version, $previous_version, $add_code, $module_version) {
         $strings = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
         $json = [
             "version" => $version,
-            "based-on" => $previous["version"] ?? "",
-            "generator" => [
-                "name" => "REDCap Translation Assistant",
-                "version" => $module_version,
-                "author" => "Dr. Günther Rezniczek",
-                "url" => "https://github.com/grezniczek/redcap_translator",
-            ],
+            "based-on" => $previous_version,
+            "generator" => self::get_generator($module_version),
+            "timestamp" => self::get_current_timestamp(),
             "strings" => [],
             "new-strings" => [],
             "removed-strings" => [],
@@ -270,8 +295,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             $hash = self::get_hash($text);
             $new = false; // TODO - based on prev file
             $changed = false; // TODO - based on prev file
-            $html = self::contains_html($text); // TODO - or'ed with prev file
-            $length_restricted = null; // TODO - merge prev
+            $html = self::contains_html($text); // TODO - or'ed with prev file - if unknown: null
+            $length_restricted = null; // TODO - merge prev, null = unknown, 0 = unrestricted, n = restricted to n
             $entry = [
                 "text" => $text,
                 "annotation" => $annotation,
@@ -288,8 +313,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $json["stats"]["n-strings"] = count($json["strings"]);
         // TODO - new, changed - from prev file
         // Code lens
-        if ($code) {
-            self::augment_with_code($json, $doc_id, $previous);
+        if ($add_code) {
+            self::augment_with_code($json, $doc_id, $previous_version);
         }
         $json["stats"]["n-new-strings"] = count($json["new-strings"]);
         $json["stats"]["n-removed-strings"] = count($json["removed-strings"]);
@@ -342,7 +367,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 for ($ci = $line_start - 1; $ci < $line_end; $ci++) {
                     $lines[] = $content_lines[$ci];
                 }
-                $hash = sha1(join("\n", $lines));
+                $hash = self::get_hash(join("\n", $lines));
                 return [ $line_number, $hash ];
             };
 
@@ -423,7 +448,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     function code_lens_cron($cron_info) {
         $state = $this->get_state();
         $state["counter"]++;
-        $state["last-updated"] = date("Y-m-d H:i:s");
+        $state["last-updated"] = self::get_current_timestamp();
         $this->setSystemSetting("state", $state);
     }
 }

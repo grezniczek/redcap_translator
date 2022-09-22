@@ -4,6 +4,7 @@ class Downloader {
 
     const err_unsupported = "Unsupported action.";
     const err_nofile = "Failed to locate file on server.";
+    const err_nometadata = "Failed to locate the metadata file on the server.";
     const err_invalidzip = "Failed to open ZIP archive (#CODE#). Damaged file?";
 
     /**
@@ -19,10 +20,11 @@ class Downloader {
                 case "package-get-zip":
                     return self::get_package($m, $mode, $_GET["version"] ?? "");
                 case "gen-metadata-json":
-                    return self::get_metadata($m, $_GET["version"], $_GET["code"] === "1", $_GET["merge"] === "1");
+                    return self::get_metadata($m, $_GET["version"], $_GET["previous"], $_GET["code"] === "1");
                 case "translation-get-json":
                 case "translation-get-ini":
-                    return self::get_language($m, $mode, $_GET["name"]);
+                case "translation-get-in-screen-ini":
+                    return self::get_translation($m, $mode, $_GET["name"], $_GET["based-on"]);
                 default:
                     return self::err_unsupported;
             }
@@ -72,7 +74,7 @@ class Downloader {
         }
     }
 
-    private static function get_language($m, $mode, $name) {
+    private static function get_translation($m, $mode, $name, $based_on) {
         // Verify stored version
         $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
         if (!array_key_exists($name, $stored)) return self::err_nofile;
@@ -80,7 +82,7 @@ class Downloader {
         // Download JSON file
         if ($mode == "translation-get-json") {
             // Build and serve JSON 
-            $json = REDCapTranslatorExternalModule::sanitize_tranlation($lang);
+            $json = REDCapTranslatorExternalModule::sanitize_translation($lang);
             $json["strings"] = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name);
             if (empty($json["strings"])) $json["strings"] = new \stdClass;
             $json["annotations"] = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name);
@@ -109,12 +111,14 @@ class Downloader {
         }
     }
 
-    private static function get_metadata($m, $version, $code, $previous) {
+    private static function get_metadata($m, $version, $based_on, $add_code) {
         // Verify stored version
-        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME) ?? [];
-        if (!array_key_exists($version, $stored)) return self::err_nofile;
-        $doc_id = $stored[$version];
-        $result = REDCapTranslatorExternalModule::generate_metadata($doc_id, $version, $m->VERSION, $code, $previous);
+        $packages = $m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME) ?? [];
+        if (!array_key_exists($version, $packages)) return self::err_nofile;
+        $metadata_files = $m->getSystemSetting(REDCapTranslatorExternalModule::METADATAFILES_SETTING_NAME) ?? [];
+        if (!array_key_exists($based_on, $metadata_files)) return self::err_nometadata;
+        $doc_id = $packages[$version];
+        $result = REDCapTranslatorExternalModule::generate_metadata($doc_id, $version, $based_on, $add_code, $m->VERSION);
         $json_name = "REDCap_v{$version}_Strings_Metadata.json";
         header('Content-Type: application/json; name="'.$json_name.'"');
         header('Content-Disposition: attachment; filename="'.$json_name.'"');

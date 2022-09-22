@@ -44,7 +44,10 @@ class REDCapTranslatorPlugin {
         }
         // TODO
         $settings["translations"] = $translations;
-
+        // Metadata fileds
+        $metadata_files = [];
+        // TODO
+        $settings["metadataFiles"] = $metadata_files;
         // Packages
         $packages = [];
         $store = self::$m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME);
@@ -78,6 +81,9 @@ REDCapTranslatorPlugin::init($module);
             </li>
             <li class="">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="translations" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-globe"></i> Translations</a>
+            </li>
+            <li class="">
+                <a href="javascript:;" data-action="main-nav" data-nav-target="metadata" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-layer-group"></i> Strings Metadata</a>
             </li>
             <li class="">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="packages" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-archive"></i> Packages</a>
@@ -122,7 +128,7 @@ REDCapTranslatorPlugin::init($module);
                 <i>Note that these files are translation JSON files rather than language INI files, which are used by REDCap. JSON files contain additional metadata. INI files can be converted to JSON files on the <em>Tools</em> tab.</i>
             </p>
             <form class="ml-2">
-                <div class="custom-file" data-uploader="lang-json">
+                <div class="custom-file" data-uploader="translation-json">
                     <input type="file" class="custom-file-input" id="upload-lang-json" accept=".json" />
                     <label class="custom-file-label" for="upload-lang-json">
                         <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
@@ -157,7 +163,7 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 <div class="form-inline ml-2">
                     <label class="mr-2" for="create-lang-based-on">Base actions on REDCap version </label>
-                    <select id="create-lang-based-on" class="form-control mr-2" data-em-para="create-lang-basedon"></select>
+                    <select id="create-lang-based-on" class="form-control mr-2" data-em-para="translation-based-on"></select>
                     <span class="ml-2">metadata.</span>
                 </div>
             </p>
@@ -205,10 +211,115 @@ REDCapTranslatorPlugin::init($module);
                         </div>
                     </td>
                     <td>
+                        <button data-action="translation-get-in-screen-ini" class="btn btn-light btn-sm" title="Download an INI file for in-screen translation based on this translation"><i class="fas fa-desktop"></i></button>
+                        |
                         <button data-action="translation-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this translation"><i class="fas fa-file-alt text-info"></i></button>
                         <button data-action="translation-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this translation"><i class="fas fa-file-code"></i></button>
                         |
                         <button data-action="translation-delete" class="btn btn-light btn-sm" title="Delete this translation from the server"><i class="far fa-trash-alt text-danger"></i></button>
+                    </td>
+                </tr>
+            </template>
+        </div>
+        <?php #endregion 
+        ?>
+        <?php #region Metadata 
+        ?>
+        <div data-nav-tab="metadata" class="d-none">
+            <p>
+                On this tab, ...
+            </p>
+            <h2>Manage REDCap strings metadata &amp; annotations files</h2>
+            <p>
+                Upload an <b>existing</b> file:
+            </p>
+            <form class="ml-2">
+                <div class="custom-file" data-uploader="metadata-json">
+                    <input type="file" class="custom-file-input" id="upload-metadata-json" accept=".json" />
+                    <label class="custom-file-label" for="upload-metadata-json">
+                        <span class="processing-file hide"><i class="fas fa-cog fa-spin"></i> Processing file (<span data-upload-progress></span>%):</span>
+                        <span class="filename">Choose or drop a metadata file&hellip;</span>
+                    </label>
+                    <div class="invalid-feedback">This is not a valid REDCap strings metadata &amp; annotations file.</div>
+                </div>
+                <div class="mr-2 mt-2">In case a metadata file for this version already exists, then</div>
+                <div class="form-inline ml-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="upload-metadata-option" id="upload-metadata-option-keep" value="keep" checked>
+                        <label class="form-check-label" for="upload-metadata-option-keep"><b>keep</b></label>
+                    </div>
+                    <p class="mr-2">or</p>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="upload-metadata-option" id="upload-metadata-option-overwrite" value="overwrite">
+                        <label class="form-check-label" for="upload-metadata-option-overwrite"><b>overwrite</b></label>
+                    </div>
+                    <p>existing modifications.</p>
+                </div>
+            </form>
+            <p>or <b>create a new</b> file:</p>
+            <div class="form-inline ml-2">
+                <button data-action="gen-metadata-json" class="btn btn-primary btn-sm"><i class="fas fa-file-code"></i> Generate</button>
+                <label class="mr-2 ml-2" for="gen-metadata-based-on">based on REDCap</label>
+                <select id="gen-metadata-based-on" class="form-control mr-2" data-em-para="gen-metadata-based-on"></select>
+                <label class="mr-2 ml-2" for="gen-metadata-merge-from">and stored metadata for </label>
+                <select id="gen-metadata-merge-from" class="form-control mr-2" data-em-para="gen-metadata-merge-from"></select>
+            </div>
+            <div class="ml-4 mt-2">
+                <div class="custom-control custom-switch" style="margin-top:-2px !important;">
+                    <input type="checkbox" class="custom-control-input" id="add-code-locations" data-em-para="gen-metadata-add-code">
+                    <label class="custom-control-label" style="padding-top: 2px;" for="add-code-locations">Add code locations (this is slow!)</label>
+                </div>
+            </div>
+            <p class="mt-4">
+                Available strings metadata &amp; annotations files:
+            </p>
+            <table class="table table-responsive table-md">
+                <thead>
+                    <tr>
+                        <th scope="col">REDCap</th>
+                        <th scope="col">Last Updated</th>
+                        <th scope="col">Strings</th>
+                        <th scope="col">Annotations</th>
+                        <th scope="col">Code</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="metadata-body"></tbody>
+            </table>
+            <template data-template="metadata-empty">
+                <tr><td colspan="4"><i>There are not currently any items to show.</i></td>
+            </template>
+            <template data-template="metadata-row">
+                <tr data-version="">
+                    <th scope="row">
+                        <div class="text-cell">
+                            <span data-key="version"></span>
+                        </div>
+                    </th>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="updated"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="strings"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="annotations"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-cell">
+                            <span data-key="code"></span>
+                        </div>
+                    </td>
+                    <td>
+                        <button data-action="metadata-download" class="btn btn-light btn-sm" title="Download this strings metadata &amp; annotations file"><i class="fas fa-file-download"></i></button>
+                        |
+                        <button data-action="metadata-delete" class="btn btn-light btn-sm" title="Delete this strings metadata &amp; annotations file"><i class="far fa-trash-alt text-danger"></i></button>
                     </td>
                 </tr>
             </template>
@@ -221,11 +332,10 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 On this tab, ...
             </p>
-            <h2>Manage and upload a REDCap install or update packages</h2>
+            <h2>Manage and upload REDCap install or update packages</h2>
             <p class="small">
                 <i>Note that the filename must be as downloaded from the REDCap Consortium site, i.e. <b>redcapX.Y.Z.zip</b> or <b>redcapX.Y.Z_upgrade.zip</b>.</i>
             </p>
-            </h2>
             <form>
                 <div class="custom-file" data-uploader="package-zip">
                     <input type="file" class="custom-file-input" id="upload-package-zip" accept=".zip" />
@@ -321,33 +431,6 @@ REDCapTranslatorPlugin::init($module);
             </form>
             <p class="small">
                 Once uploaded, the converted file will start to download immediately. Any error messages are contained within the downloaded file.
-            </p>
-            <hr>
-            <h2>Generate a REDCap strings metadata &amp; annotation file</h2>
-            <p>
-                More stuff for JSON generation...
-            </p>
-            <div class="form-inline">
-                <label class="mr-2" for="gen-json-based-on">Based on REDCap</label>
-                <select id="gen-json-based-on" class="form-control mr-2" data-em-para="based-on"></select>
-                <div class="custom-control custom-switch ml-4 mt-2" style="margin-top:-2px !important;">
-                    <input type="checkbox" class="custom-control-input" id="base-on-prev" data-em-para="gen-json-merge-prev">
-                    <label class="custom-control-label" style="padding-top: 2px;" for="base-on-prev">Merge in previous metadata</label>
-                </div>
-                <div class="custom-control custom-switch ml-4 mt-2" style="margin-top:-2px !important;">
-                    <input type="checkbox" class="custom-control-input" id="add-code-locations" data-em-para="gen-json-with-code">
-                    <label class="custom-control-label" style="padding-top: 2px;" for="add-code-locations">Add code locations (this is slow!)</label>
-                </div>
-            </div>
-            <p>
-                <button data-action="gen-metadata-json" class="btn btn-primary btn-sm mb-2"><i class="fas fa-file-code"></i> Generate</button>
-            </p>
-            <hr>
-            <h2>Generate a REDCap translation file for in-screen translation</h2>
-            <p>
-                Provide way to upload a Language.json file.
-                When no file is provided, English will be output.
-                
             </p>
         </div>
         <?php #endregion 
