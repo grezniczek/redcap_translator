@@ -37,6 +37,7 @@
     "auth-ajax-actions": [
         "create-new-translation",
         "translation-delete",
+        "metadata-delete",
         "package-get-strings",
         "package-get-zip",
         "package-delete",

@@ -45,7 +45,7 @@ class REDCapTranslatorPlugin {
         // TODO
         $settings["translations"] = $translations;
         // Metadata fileds
-        $metadata_files = [];
+        $metadata_files = self::$m->get_metadata_files();
         // TODO
         $settings["metadataFiles"] = $metadata_files;
         // Packages

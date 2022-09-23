@@ -537,7 +537,7 @@ function renderMetadataTab() {
     }
 }
 
-function handleMetadataAction(action) {
+function handleMetadataAction(action, version) {
     if (action == 'gen-metadata-json') {
         const basedOn = ($('select[data-em-para="gen-metadata-based-on"]').val() ?? '').toString();
         const mergeFrom = ($('select[data-em-para="gen-metadata-merge-from"]').val() ?? '').toString();
@@ -553,6 +553,24 @@ function handleMetadataAction(action) {
             // @ts-ignore
             window.location = url;
         }, 400);
+    }
+    else if (action == 'metadata-delete') {
+        JSMO.ajax(action, version)
+        .then(function(response) {
+            if (response.success) {
+                delete config.metadataFiles[version];
+                renderMetadataTab();
+                showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
+            }
+            else {
+                showToast('#translator-errorToast', 'Failed to delete version \'' + version + '\'. Check the console for details.');
+                error('Failed to delete version \'' + version + '\':', response.error);
+            }
+        })
+        .catch(function(err) {
+            showToast('#translator-errorToast', 'Failed to delete version \'' + version + '\'. Check the console for details.');
+            error('Failed to delete version \'' + version + '\':', err);
+        });
     }
 }
 
@@ -889,26 +907,31 @@ function handleActions(event) {
         break;
         case 'package-get-strings':
         case 'package-get-zip':
-        case 'package-delete': {
+        case 'package-delete': 
+        {
             handlePackagesAction(action, ($source.attr('data-version') ?? '').toString());
         }
         break;
-        case 'gen-metadata-json': {
-            handleMetadataAction(action);
+        case 'gen-metadata-json':
+        case 'metadata-delete':
+        {
+            handleMetadataAction(action, ($source.parents('tr').attr('data-version') ?? '').toString());
         }
         break;
         case 'create-new-translation':
         case 'translation-delete':
         case 'translation-get-json':
         case 'translation-get-ini':
-        case 'translation-get-in-screen-ini': {
+        case 'translation-get-in-screen-ini': 
+        {
             const name = ($source.attr('data-name') ?? '').toString();
             const basedOn = ($('[data-em-para="translation-based-on"]').val() ?? '').toString();
             handleTranslationsAction(action, name, basedOn);
         }
         break;
         // ???
-        default: {
+        default: 
+        {
             warn('Unknown action: ' + action)
         }
         break

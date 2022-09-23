@@ -14,6 +14,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     public const PACKAGES_SETTING_NAME = "packages";
     public const METADATAFILES_SETTING_NAME = "metadata-files";
+    public const METADATAFILE_STORAGE_SETTING_PREFIX = "metadata-file-";
     public const TRANSLATIONS_SETTING_NAME = "translations";
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
@@ -34,7 +35,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $link;
     }
 
-    public static function validateCreateNewLang($data) {
+    public function validateCreateNewLang($data) {
         if (empty($data["name"])) {
             return "Missing required item 'name'.";
         }
@@ -63,7 +64,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
             case "create-new-translation":
-                $error = self::validateCreateNewLang($payload);
+                $error = $this->validateCreateNewLang($payload);
                 if (empty($error)) {
                     $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
                     if (isset($store[$payload["name"]])) {
@@ -72,7 +73,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     else {
                         unset($payload["strings"]);
                         $payload["coverage"] = "TBD";
-                        $payload["timestamp"] = self::get_current_timestamp();
+                        $payload["timestamp"] = $this->get_current_timestamp();
                         $payload["filename"] = $payload["name"].".json";
                         $store[$payload["name"]] = $payload;
                         $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
@@ -106,6 +107,13 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                         "error" => "This language does not exist on the server."
                     ];
                 }
+                break;
+            case "metadata-delete": 
+                $version = $payload;
+                $this->delete_metadata_file($version);
+                return [
+                    "success" => true,
+                ];
                 break;
             case "package-delete":
                 $version = $payload;
@@ -168,7 +176,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
     // Purge all parts that should not be stored
-    public static function sanitize_translation($json) {
+    public function sanitize_translation($json) {
         foreach (array_keys($json) as $key) {
             if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url"], true)) {
                 unset($json[$key]);
@@ -186,15 +194,15 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
-    public static function get_strings_from_zip($doc_id, $version) {
+    public function get_strings_from_zip($doc_id, $version) {
         // Copy archive to local temp
         $local_file = \Files::copyEdocToTemp($doc_id);
         // Extract and merge languages
         $zip = new \ZipArchive;
         $result = $zip->open($local_file);
         if ($result === true) {
-            $rc_strings = self::read_ini($zip, "redcap/redcap_v$version/LanguageUpdater/English.ini");
-            $em_strings = self::read_ini($zip, "redcap/redcap_v$version/ExternalModules/classes/English.ini");
+            $rc_strings = $this->read_ini($zip, "redcap/redcap_v$version/LanguageUpdater/English.ini");
+            $em_strings = $this->read_ini($zip, "redcap/redcap_v$version/ExternalModules/classes/English.ini");
             $result = array_merge($rc_strings, $em_strings);
             $zip->close();
         }
@@ -203,29 +211,29 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $result;
     }
 
-    public static function get_strings_from_current() {
+    public function get_strings_from_current() {
         $rc_strings = parse_ini_file(APP_PATH_DOCROOT . "LanguageUpdater/English.ini");
         $em_strings = parse_ini_file(APP_PATH_EXTMOD."classes/English.ini");
         $result = array_merge($rc_strings, $em_strings);
         return $result;
     }
 
-    public static function strings_to_ini($strings, $header = "") {
+    public function strings_to_ini($strings, $header = "") {
         $lines = empty($header) ? [] : ["$header"];
         foreach ($strings as $key => $text) {
-            $lines[] = $key . ' = "' . self::convert_ini_whitespace($text) . '"';
+            $lines[] = $key . ' = "' . $this->convert_ini_whitespace($text) . '"';
         }
         return join("\n", $lines);
     }
 
-    private static function convert_ini_whitespace($string) {
+    private function convert_ini_whitespace($string) {
         return str_replace(
             array( '"' , "\r\n", "\r", "\n", "\t", "  ", "  ", "  ", "  ", "  ", "  " ), 
             array( '\"', ' '   , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' '  ), 
             $string);
     }
 
-    private static function read_ini($zip, $path) {
+    private function read_ini($zip, $path) {
         $contents = "";
         $fp = $zip->getStream($path);
         while (!feof($fp)) {
@@ -241,19 +249,18 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
      * @param string $text 
      * @return string 
      */
-    public static function get_hash($text) {
+    public function get_hash($text) {
         return substr(sha1($text), 0, 6);
     }
 
     /**
      * Gets the 'generator' content for metadata files
-     * @param string $module_version 
      * @return array 
      */
-    private static function get_generator($module_version) {
+    private function get_generator() {
         return [
             "name" => "REDCap Translation Assistant",
-            "version" => $module_version,
+            "version" => $this->VERSION,
             "author" => "Dr. Günther Rezniczek",
             "url" => "https://github.com/grezniczek/redcap_translator",
         ];
@@ -263,23 +270,23 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
      * Gets the current time formatted as YYYY-MM-DD HH:MM:SS
      * @return string
      */
-    public static function get_current_timestamp() {
+    public function get_current_timestamp() {
         return date("Y-m-d H:i:s");
     }
 
-    public static function validate_and_sanitize_metadata(&$json, $module_version) {
+    public function validate_and_sanitize_metadata(&$meta) {
         // TODO
 
         return true;
     }
 
-    public static function generate_metadata($doc_id, $version, $previous_version, $add_code, $module_version) {
-        $strings = REDCapTranslatorExternalModule::get_strings_from_zip($doc_id, $version);
+    public function generate_metadata($doc_id, $version, $previous_version, $add_code) {
+        $strings = $this->get_strings_from_zip($doc_id, $version);
         $json = [
             "version" => $version,
             "based-on" => $previous_version,
-            "generator" => self::get_generator($module_version),
-            "timestamp" => self::get_current_timestamp(),
+            "generator" => $this->get_generator(),
+            "timestamp" => $this->get_current_timestamp(),
             "strings" => [],
             "new-strings" => [],
             "removed-strings" => [],
@@ -290,12 +297,12 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
         foreach ($strings as $key => $text) {
             // Normalize string before hashing
-            $text = self::convert_ini_whitespace($text);
+            $text = $this->convert_ini_whitespace($text);
             $annotation = ""; // TODO - merge from prev
-            $hash = self::get_hash($text);
+            $hash = $this->get_hash($text);
             $new = false; // TODO - based on prev file
             $changed = false; // TODO - based on prev file
-            $html = self::contains_html($text); // TODO - or'ed with prev file - if unknown: null
+            $html = $this->contains_html($text); // TODO - or'ed with prev file - if unknown: null
             $length_restricted = null; // TODO - merge prev, null = unknown, 0 = unrestricted, n = restricted to n
             $entry = [
                 "text" => $text,
@@ -304,7 +311,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 "new" => $new,
                 "changed" => $changed,
                 "html" => $html,
-                "interpolated" => self::num_interpolations($text),
+                "interpolated" => $this->num_interpolations($text),
                 "length-restricted" => $length_restricted,
             ];
             $json["strings"][$key] = $entry;
@@ -314,7 +321,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         // TODO - new, changed - from prev file
         // Code lens
         if ($add_code) {
-            self::augment_with_code($json, $doc_id, $previous_version);
+            $this->augment_with_code($json, $doc_id, $previous_version);
         }
         $json["stats"]["n-new-strings"] = count($json["new-strings"]);
         $json["stats"]["n-removed-strings"] = count($json["removed-strings"]);
@@ -323,7 +330,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $json;
     }
 
-    private static function augment_with_code(&$json, $doc_id, $previous) {
+    private function augment_with_code(&$json, $doc_id, $previous) {
         // Copy archive to local temp
         $local_file = \Files::copyEdocToTemp($doc_id);
         // Extract and merge languages
@@ -367,7 +374,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 for ($ci = $line_start - 1; $ci < $line_end; $ci++) {
                     $lines[] = $content_lines[$ci];
                 }
-                $hash = self::get_hash(join("\n", $lines));
+                $hash = $this->get_hash(join("\n", $lines));
                 return [ $line_number, $hash ];
             };
 
@@ -434,21 +441,70 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $json["stats"]["n-brute"] = $n_brute_forced;
     }
 
-    private static function contains_html($s) {
+    private function contains_html($s) {
         return strcmp($s, strip_tags($s)) != 0;
     }
 
-    private static function num_interpolations($s) {
+    private function num_interpolations($s) {
         $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
         if ($n === false) $n = 0;
         return $n;
     }
 
 
+    public function get_metadata_files() {
+        $stored = $this->getSystemSetting(self::METADATAFILES_SETTING_NAME) ?? [];
+        return $stored;
+    }
+
+    public function get_metadata_file($version) {
+        $file = $this->getSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version) ?? null;
+        if ($file) {
+            return json_decode($file);
+        }
+        return null;
+    }
+
+    public function store_metadata_file($meta) {
+        $version = $meta["version"];
+        // Store data
+        $file = json_encode($meta);
+        $size = strlen($file);
+        $this->setSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version, $file);
+        unset($file);
+        // Store info in directory
+        $n_strings = count($meta["strings"] ?? []);
+        $n_annotations = count($meta["annotations"] ?? []);
+        $code = isset($meta["stats"]["n-php-files"]);
+        $info = [
+            "version" => $meta["version"],
+            "updated" => $meta["timestamp"],
+            "strings" => $n_strings,
+            "annotations" => $n_annotations,
+            "code" => $code,
+            "size" => $size,
+        ];
+        $stored = $this->getSystemSetting(self::METADATAFILES_SETTING_NAME) ?? [];
+        $stored[$version] = $info;
+        $this->setSystemSetting(self::METADATAFILES_SETTING_NAME, $stored);
+        return $info;
+    }
+
+    public function delete_metadata_file($version) {
+        $stored = $this->getSystemSetting(self::METADATAFILES_SETTING_NAME) ?? [];
+        if (!array_key_exists($version, $stored)) {
+            throw new \Exception("Metadata file for version '$version' does not exist.");
+        }
+        unset($stored[$version]);
+        $this->setSystemSetting(self::METADATAFILES_SETTING_NAME, $stored);
+        $this->setSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version, null);
+    }
+
+
     function code_lens_cron($cron_info) {
         $state = $this->get_state();
         $state["counter"]++;
-        $state["last-updated"] = self::get_current_timestamp();
+        $state["last-updated"] = $this->get_current_timestamp();
         $this->setSystemSetting("state", $state);
     }
 }
