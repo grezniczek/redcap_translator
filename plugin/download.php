@@ -25,6 +25,8 @@ class Downloader {
                     return self::get_package($mode, $_GET["version"] ?? "");
                 case "gen-metadata-json":
                     return self::get_metadata($_GET["version"], $_GET["previous"], $_GET["code"] === "1");
+                case "metadata-download":
+                    return self::download_metadata($_GET["version"]);
                 case "translation-get-json":
                 case "translation-get-ini":
                 case "translation-get-in-screen-ini":
@@ -126,8 +128,26 @@ class Downloader {
         $json_name = "REDCap_v{$version}_Strings_Metadata.json";
         header('Content-Type: application/json; name="'.$json_name.'"');
         header('Content-Disposition: attachment; filename="'.$json_name.'"');
-        print json_encode($result, JSON_PRETTY_PRINT);
+        print json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+    private static function download_metadata($version) {
+        $metadata_files = self::$m->getSystemSetting(REDCapTranslatorExternalModule::METADATAFILES_SETTING_NAME) ?? [];
+        if (!array_key_exists($version, $metadata_files)) {
+            return self::err_nometadata;
+        }
+        $info = $metadata_files[$version];
+        $filename = "REDCap Strings Metadata - {$info["updated"]}.json";
+        $content = self::$m->getSystemSetting(REDCapTranslatorExternalModule::METADATAFILE_STORAGE_SETTING_PREFIX.$version) ?? null;
+        if (!$content) {
+            return self::err_nometadata;
+        }
+        header('Content-Type: application/json; name="'.$filename.'"');
+        header('Content-Disposition: attachment; filename="'.$filename.'"');
+        print $content;
+        exit;
+        
     }
 }
 print Downloader::start($module);

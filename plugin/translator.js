@@ -554,6 +554,17 @@ function handleMetadataAction(action, version) {
             window.location = url;
         }, 400);
     }
+    else if (action == 'metadata-download') {
+        const url = new URL(config.downloadUrl);
+        url.searchParams.append('mode', action);
+        url.searchParams.append('version', version);
+        log('Requestiong download from:',url);
+        showToast('#translator-successToast', 'Initiated download of strings metadata file. The download should start momentarily.');
+        setTimeout(() => {
+            // @ts-ignore
+            window.location = url;
+        }, 400);
+    }
     else if (action == 'metadata-delete') {
         JSMO.ajax(action, version)
         .then(function(response) {
@@ -913,6 +924,7 @@ function handleActions(event) {
         }
         break;
         case 'gen-metadata-json':
+        case 'metadata-download':
         case 'metadata-delete':
         {
             handleMetadataAction(action, ($source.parents('tr').attr('data-version') ?? '').toString());

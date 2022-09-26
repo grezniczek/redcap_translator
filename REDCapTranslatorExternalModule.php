@@ -468,7 +468,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public function store_metadata_file($meta) {
         $version = $meta["version"];
         // Store data
-        $file = json_encode($meta);
+        $file = json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $size = strlen($file);
         $this->setSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version, $file);
         unset($file);
