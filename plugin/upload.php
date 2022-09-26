@@ -2,34 +2,36 @@
 
 class REDCapTranslatorFileUploader {
 
+    /** @var REDCapTranslatorExternalModule */
+    private static $m = null;
     /**
      * Uploads a REDCap install or upgrade file
      * @param REDCapTranslatorExternalModule $m 
      * @return void 
      */
     public static function upload($m) {
+        self::$m = $m;
         $mode = $_POST["mode"] ?? "";
         $file = $_FILES["file"] ?? [ "name" => "" ];
         switch ($mode) {
             case "package-zip":
-                return self::uploadPackage($file, $m);
+                return self::uploadPackage($file);
             case "translation-json":
-                return self::uploadTranslation($file, $m);
+                return self::uploadTranslation($file);
             case "metadata-json":
-                return self::uploadMetadataFile($file, $_POST["merge"], $m);
+                return self::uploadMetadataFile($file, $_POST["merge"]);
             case "ini-to-json":
-                return self::convertIniToJson($file, $m);
+                return self::convertIniToJson($file);
             case "mlm-to-json":
-                return self::convertMlmToJson($file, $m);
+                return self::convertMlmToJson($file);
         }
         throw new \Exception("Invalid operation.");
     }
 
     /**
      * @param array $file 
-     * @param REDCapTranslatorExternalModule $m 
      */
-    private static function convertMlmToJson($file, $m) {
+    private static function convertMlmToJson($file) {
         // Check file name
         $re = '/^.*\.[jJ][sS][oO][nN]$/m';
         if (!preg_match($re, $file["name"])) {
@@ -67,7 +69,7 @@ class REDCapTranslatorFileUploader {
             "name" => $name,
             "localized-name" => $mlm["display"],
             "iso" => mb_substr($mlm["key"], 0, 10),
-            "timestamp" => $mlm["timestamp"] ?? $m->get_current_timestamp(),
+            "timestamp" => $mlm["timestamp"] ?? self::$m->get_current_timestamp(),
             "maintained-by" => [
                 [
                     "name" => "Name",
@@ -98,9 +100,8 @@ class REDCapTranslatorFileUploader {
 
     /**
      * @param array $file 
-     * @param REDCapTranslatorExternalModule $m 
      */
-    private static function convertIniToJson($file, $m) {
+    private static function convertIniToJson($file) {
         // Check file name
         $re = '/^(?\'name\'.*)\.[iI][nN][iI]$/m';
         if (!preg_match($re, $file["name"], $matches)) {
@@ -122,7 +123,7 @@ class REDCapTranslatorFileUploader {
             "name" => $filename,
             "localized-name" => $filename,
             "iso" => "",
-            "timestamp" => $m->get_current_timestamp(),
+            "timestamp" => self::$m->get_current_timestamp(),
             "maintained-by" => [
                 [
                     "name" => "Name",
@@ -146,9 +147,8 @@ class REDCapTranslatorFileUploader {
 
     /**
      * @param array $file 
-     * @param REDCapTranslatorExternalModule $m 
      */
-    private static function uploadTranslation($file, $m) {
+    private static function uploadTranslation($file) {
         // Check file name
         $re = '/^.+\.[jJ][sS][oO][nN]$/m';
         if (!preg_match($re, $file["name"])) {
@@ -172,7 +172,7 @@ class REDCapTranslatorFileUploader {
         // Extract strings and annotations for separate storage
         $strings = $json["strings"] ?? null;
         $annotations = $json["annotations"] ?? [];
-        $error = $m->validateCreateNewLang($json);
+        $error = self::$m->validateCreateNewLang($json);
         if (!empty($error)) {
             return [
                 "success" => false,
@@ -180,9 +180,9 @@ class REDCapTranslatorFileUploader {
             ];
         }
         // Purge all parts that should not be stored
-        $json = $m->sanitize_translation($json);
+        $json = self::$m->sanitize_translation($json);
         // Store the file, in parts
-        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
+        $stored = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
         // Created or updated?
         $verb = isset($stored[$name]) ? "Updated" : "Created";
         // Update storage
@@ -191,10 +191,10 @@ class REDCapTranslatorFileUploader {
         if (!isset($json["timestamp"])) $json["timestamp"] = "(???)";
         $json["filename"] = $file["name"];
         $stored[$name] = $json;
-        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
-        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, $strings);
-        $m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, $annotations);
-        $m->log("$verb translation file '{$name}' ({$file["name"]}).");
+        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
+        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, $strings);
+        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, $annotations);
+        self::$m->log("$verb translation file '{$name}' ({$file["name"]}).");
         $json["success"] = true;
         return $json;
     }
@@ -215,9 +215,8 @@ class REDCapTranslatorFileUploader {
 
     /**
      * @param array $file 
-     * @param REDCapTranslatorExternalModule $m 
      */
-    private static function uploadMetadataFile($file, $merge, $m) {
+    private static function uploadMetadataFile($file, $merge) {
         // Check file name
         $re = '/^.+\.[jJ][sS][oO][nN]$/m';
         if (!preg_match($re, $file["name"])) {
@@ -239,24 +238,23 @@ class REDCapTranslatorFileUploader {
         if (!preg_match('/^\d+\.\d+\.\d+$/m', $version)) {
             return self::fail("Missing or invalid item 'version'.");
         }
-        if (!$m->validate_and_sanitize_metadata($meta)) {
+        if (!self::$m->validate_and_sanitize_metadata($meta)) {
             return self::fail("This does not appear to be a valid metadata file.");
         }
         // Merge if this version is already present
-        $previous = $m->get_metadata_file($version);
+        $previous = self::$m->get_metadata_file($version);
         if ($previous) {
             // TODO - Merge
         }
         // Store and send response
-        $meta_info = $m->store_metadata_file($meta);
+        $meta_info = self::$m->store_metadata_file($meta);
         return self::ok($meta_info);
     }
 
     /**
      * @param array $file 
-     * @param REDCapTranslatorExternalModule $m 
      */
-    private static function uploadPackage($file, $m) {
+    private static function uploadPackage($file) {
         // Check file name
         $re = '/^redcap(?<version>\d+\.\d+\.\d+)(_upgrade){0,1}\.zip$/m';
         if (!preg_match($re, $file["name"], $matches)) {
@@ -266,7 +264,7 @@ class REDCapTranslatorFileUploader {
             ];
         }
         $version = $matches["version"];
-        $stored = $m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME) ?? [];
+        $stored = self::$m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME) ?? [];
         if (array_key_exists($version, $stored)) {
             return [
                 "success" => false,
@@ -289,10 +287,10 @@ class REDCapTranslatorFileUploader {
             ];
         }
         $stored[$version] = $doc_id;
-        $m->setSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME, $stored);
+        self::$m->setSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME, $stored);
         $name = \Files::getEdocName($doc_id);
 
-        $m->log("Uploaded REDCap package '$name' ({$file["size"]} bytes) (doc_id = $doc_id).");
+        self::$m->log("Uploaded REDCap package '$name' ({$file["size"]} bytes) (doc_id = $doc_id).");
 
         return [
             "success" => true,
@@ -302,9 +300,7 @@ class REDCapTranslatorFileUploader {
         ];
     }
 }
-
 // Upload
-
 try {
     print json_encode(REDCapTranslatorFileUploader::upload($module));
 }
