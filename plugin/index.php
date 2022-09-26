@@ -73,25 +73,25 @@ REDCapTranslatorPlugin::init($module);
     ?>
     <div id="sub-nav" class="d-sm-block" style="margin-bottom:0.5em !important;">
         <ul>
-            <li class="active">
+            <li class="active mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="info" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-info-circle"></i> Info</a>
             </li>
-            <li class="">
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="translate" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-exchange-alt"></i> Translate</a>
             </li>
-            <li class="">
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="translations" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-globe"></i> Translations</a>
             </li>
-            <li class="">
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="metadata" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-layer-group"></i> Strings Metadata</a>
             </li>
-            <li class="">
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="packages" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-archive"></i> Packages</a>
             </li>
-            <li class="">
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="tools" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-wrench"></i> Tools</a>
             </li>
-            <li>
+            <li class="mt-1">
                 <a href="javascript:;" data-action="main-nav" data-nav-target="settings" style="font-size:13px;color:#393733;padding:7px 9px;"><i class="fas fa-cog"></i> Settings</a>
             </li>
         </ul>
@@ -258,11 +258,15 @@ REDCapTranslatorPlugin::init($module);
             </form>
             <p>or <b>create a new</b> file:</p>
             <div class="form-inline ml-2">
-                <button data-action="gen-metadata-json" class="btn btn-primary btn-sm"><i class="fas fa-file-code"></i> Generate</button>
-                <label class="mr-2 ml-2" for="gen-metadata-based-on">based on REDCap</label>
-                <select id="gen-metadata-based-on" class="form-control mr-2" data-em-para="gen-metadata-based-on"></select>
-                <label class="mr-2 ml-2" for="gen-metadata-merge-from">and stored metadata for </label>
-                <select id="gen-metadata-merge-from" class="form-control mr-2" data-em-para="gen-metadata-merge-from"></select>
+                <button data-action="gen-metadata-json" class="btn btn-primary btn-sm mt-1"><i class="fas fa-file-code"></i> Generate</button>
+                <label class="mr-2 ml-2 mt-1" for="gen-metadata-based-on">based on REDCap</label>
+                <span class="mt-1">
+                    <select id="gen-metadata-based-on" class="form-control mr-2" data-em-para="gen-metadata-based-on"></select>
+                </span>
+                <label class="mr-2 ml-2 mt-1" for="gen-metadata-merge-from">and stored metadata for </label>
+                <span class="mt-1">
+                    <select id="gen-metadata-merge-from" class="form-control mr-2" data-em-para="gen-metadata-merge-from"></select>
+                </span>
             </div>
             <div class="ml-4 mt-2">
                 <div class="custom-control custom-switch" style="margin-top:-2px !important;">
