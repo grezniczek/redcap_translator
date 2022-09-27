@@ -19,7 +19,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
     public const DEBUG_SETTING_NAME = "debug-mode";
-    public const INVISIBLE_CHAR = "‌";
+    public const INVISIBLE_CHAR_1 = "‌"; // U+200C Zero-width non-joiner
+    public const INVISIBLE_CHAR_2 = "‍"; // U+200D Zero-width joiner
+    public const IN_SCREEN_VERSION = "redcap_translation_assistant_version";
+    public const IN_SCREEN_KEYS = "redcap_translation_assistant_keys";
 
     /**
      * @var InjectionHelper
@@ -460,7 +463,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public function get_metadata_file($version) {
         $file = $this->getSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version) ?? null;
         if ($file) {
-            return json_decode($file);
+            return json_decode($file, true);
         }
         return null;
     }

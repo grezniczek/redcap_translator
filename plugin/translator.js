@@ -62,7 +62,7 @@ THIS.init = function(data) {
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('metadata');
+        activateTab('translations');
     });
 };
 
