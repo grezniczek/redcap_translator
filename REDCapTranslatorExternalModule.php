@@ -1,9 +1,5 @@
 <?php namespace RUB\REDCapTranslatorExternalModule;
 
-use MicrosoftAzure\Storage\Common\Exceptions\InvalidArgumentTypeException;
-use LogicException;
-use RuntimeException;
-
 require_once "classes/InjectionHelper.php";
 
 /**
@@ -503,6 +499,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $this->setSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version, null);
     }
 
+    public function encode_invisible($idx) {
+        $binary = substr("0000000000000000".decbin($idx), -16);
+        $invisible = str_replace(["0","1"], [self::INVISIBLE_CHAR_1,self::INVISIBLE_CHAR_2], $binary);
+        return $invisible;
+    }
 
     function code_lens_cron($cron_info) {
         $state = $this->get_state();
@@ -510,4 +511,5 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $state["last-updated"] = $this->get_current_timestamp();
         $this->setSystemSetting("state", $state);
     }
+
 }

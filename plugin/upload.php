@@ -136,7 +136,12 @@ class REDCapTranslatorFileUploader {
             "annotations" => new \stdClass
         ];
         foreach ($ini as $key => $text) {
-            $json["strings"][$key] = $text;
+            $json["strings"][$key] = [
+                "do-not-translate" => null,
+                "translations" => [
+                    "" => $text
+                ]
+            ];
         }
         return [
             "success" => true,
