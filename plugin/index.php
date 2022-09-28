@@ -30,6 +30,7 @@ class REDCapTranslatorPlugin {
             "invisibleChar1" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_1,
             "invisibleChar2" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_2,
             "state" => self::$m->get_state(),
+            "inScreenEnabled" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::INSCREENENABLED_SETTING_NAME) === true,
         );
         // Translations
         $translations = [];
@@ -43,8 +44,9 @@ class REDCapTranslatorPlugin {
                 "updated" => $entry["timestamp"],
             ];
         }
-        // TODO
         $settings["translations"] = $translations;
+        $current_translation = self::$m->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_SETTING_NAME) ?? "";
+        $settings["currentTranslation"] = in_array($current_translation, $translations, true) ? $current_translation : "";
         // Metadata fileds
         $metadata_files = self::$m->get_metadata_files();
         // TODO
@@ -115,6 +117,20 @@ REDCapTranslatorPlugin::init($module);
             <p>
                 On this tab, ...
             </p>
+            <p>
+                <div class="form-inline">
+                    <label class="mr-2" for="current-translation-file">Currently active translation file:</label>
+                    <select id="current-translation-file" class="form-control mr-2" data-em-para="current-translation"></select>
+                    <div class="custom-control custom-switch ml-3" style="margin-top:-2px !important;">
+                        <input type="checkbox" data-type="setting" class="custom-control-input" id="in-screen-switch" data-setting="inScreenEnabled">
+                        <label class="custom-control-label" style="padding-top: 2px;" for="in-screen-switch">Enable in-screen translation</label>
+                    </div>
+                </div>
+            </p>
+            <p class="small">
+                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing).
+            </p>
+
         </div>
         <?php #endregion 
         ?>

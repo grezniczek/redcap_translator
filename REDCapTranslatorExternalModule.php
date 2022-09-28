@@ -14,6 +14,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const TRANSLATIONS_SETTING_NAME = "translations";
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
+    public const CURRENT_TRANSLATION_SETTING_NAME = "current-translate";
+    public const INSCREENENABLED_SETTING_NAME = "inscreen-enabled";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR_1 = "‌"; // U+200C Zero-width non-joiner
     public const INVISIBLE_CHAR_2 = "‍"; // U+200D Zero-width joiner
@@ -31,33 +33,19 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
     function redcap_module_link_check_display($project_id, $link) {
+        if ($link["tt_name"] == "module_link_plugin") {
+            return $link;
+        }
+        if ($link["tt_name"] == "module_link_translate") {
+            // TODO - suppress on plugin page
+            return $this->getSystemSetting(self::INSCREENENABLED_SETTING_NAME) === true ? $link : null;
+        }
         return $link;
     }
 
-    public function validateCreateNewLang($data) {
-        if (empty($data["name"])) {
-            return "Missing required item 'name'.";
-        }
-        $re = '/^[A-Za-z_-]+$/m';
-        if (!preg_match($re, $data["name"])) {
-            return "Item 'name' must consist of letters, hyphen, and underscore only.";
-        }
-        if (mb_strlen($data["name"]) > 100) {
-            return "Item 'name' exceeds the maximum length of 100 characters.";
-        }
-        if (empty($data["localized-name"])) {
-            return "Missing required item 'localized-name'.";
-        }
-        if (mb_strlen($data["localized-name"]) > 100) {
-            return "Item 'localized-name' exceeds the maximum length of 100 characters.";
-        }
-        if (mb_strlen($data["iso"]) > 10) {
-            return "Item 'iso' exceeds the maximum length of 10 characters.";
-        }
-        if (!is_array($data["strings"])) {
-            return "Missing or invalid required item 'strings'.";
-        }
-        return "";
+    function redcap_every_page_top($project_id = null) {
+
+
     }
 
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
@@ -160,6 +148,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
                     return ["success" => true];
                 }
+                if ($setting == "inScreenEnabled") {
+                    $this->setSystemSetting(self::INSCREENENABLED_SETTING_NAME, $value === true);
+                    return ["success" => true];
+                }
                 return [
                     "success" => false,
                     "error" => "Unknown setting '$setting'."
@@ -173,6 +165,35 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         }
     }
 
+
+
+
+
+    public function validateCreateNewLang($data) {
+        if (empty($data["name"])) {
+            return "Missing required item 'name'.";
+        }
+        $re = '/^[A-Za-z_-]+$/m';
+        if (!preg_match($re, $data["name"])) {
+            return "Item 'name' must consist of letters, hyphen, and underscore only.";
+        }
+        if (mb_strlen($data["name"]) > 100) {
+            return "Item 'name' exceeds the maximum length of 100 characters.";
+        }
+        if (empty($data["localized-name"])) {
+            return "Missing required item 'localized-name'.";
+        }
+        if (mb_strlen($data["localized-name"]) > 100) {
+            return "Item 'localized-name' exceeds the maximum length of 100 characters.";
+        }
+        if (mb_strlen($data["iso"]) > 10) {
+            return "Item 'iso' exceeds the maximum length of 10 characters.";
+        }
+        if (!is_array($data["strings"])) {
+            return "Missing or invalid required item 'strings'.";
+        }
+        return "";
+    }
 
     // Purge all parts that should not be stored
     public function sanitize_translation($json) {
@@ -505,11 +526,18 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $invisible;
     }
 
+
+    #region Crons
+
     function code_lens_cron($cron_info) {
+        // TODO
+        // This is some dummy action
         $state = $this->get_state();
         $state["counter"]++;
         $state["last-updated"] = $this->get_current_timestamp();
         $this->setSystemSetting("state", $state);
     }
+
+    #endregion
 
 }

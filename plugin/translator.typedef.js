@@ -18,6 +18,8 @@
  *  metadataFiles: object<string,MetadataFileData>
  *  packages: object<string,PackageData>
  *  translations: object<string, TranslationData>
+ *  currentTranslation: string
+ *  inScreenEnabled: boolean
  * }}
  */
 

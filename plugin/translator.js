@@ -43,6 +43,9 @@ THIS.init = function(data) {
         // Handle actions
         // General
         $('div.translator-em').on('click', handleActions);
+        // Translate
+        $('div.translator-em [data-em-para="current-translation"]').on('change', setCurrentTranslationFile);
+        
         // Translations 
         $('div.translator-em [data-uploader="translation-json"] input[type="file"]').on('change', uploadTranslationJson);
         // Metadata 
@@ -57,16 +60,40 @@ THIS.init = function(data) {
 
 
         validateCreateNewForm(true);
+        renderTranslateTab();
         renderTranslationsTab();
         renderMetadataTab();
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('translations');
+        activateTab('translate');
     });
 };
 
 var currentTab = '';
+
+//#endregion
+
+//#region Translate
+
+function renderTranslateTab() {
+    log('Updating translate tab:', config.currentTranslation, config.translations);
+    updateTranslateTab();
+    $('div[data-nav-tab="translate"] input[data-setting="inScreenEnabled"]').prop('checked', config.inScreenEnabled);
+}
+
+function updateTranslateTab() {
+    addVersions($('[data-nav-tab="translate"] select[data-em-para="current-translation"]'), sortByVersion(config.translations));
+}
+
+/**
+ * Uploads a language JSON file.
+ * @param {JQuery.TriggeredEvent} event
+ */
+function setCurrentTranslationFile(event) {
+    const newCurrent = ($('[data-nav-tab="translate"] select[data-em-para="current-translation"]').val() ?? '').toString();
+    log('Current translation changed: ' + newCurrent);
+}
 
 //#endregion
 
@@ -125,7 +152,7 @@ function validateCreateNewForm(e) {
  * @param {string} name 
  * @param {string} basedOn
  */
- function handleTranslationsAction(action, name, basedOn) {
+function handleTranslationsAction(action, name, basedOn) {
     log('Language action:', action, name);
     switch(action) {
         case 'create-new-translation': {
@@ -198,7 +225,7 @@ function validateCreateNewForm(e) {
 /**
  * Renders the 'Translations' tab.
  */
- function renderTranslationsTab() {
+function renderTranslationsTab() {
     // Versions
     addVersions($('[data-nav-tab="translations"] select[data-em-para="translation-based-on"]'), sortByVersion(config.metadataFiles));
     log('Updating translations:', config.translations);
@@ -234,7 +261,7 @@ function validateCreateNewForm(e) {
  * Uploads a language JSON file.
  * @param {JQuery.TriggeredEvent} event
  */
- function uploadTranslationJson(event) {
+function uploadTranslationJson(event) {
     const $uploader = $('div.translator-em [data-uploader="translation-json"]');
     const $file = $uploader.find('input[type=file]');
     const $filename = $uploader.find('span.filename');
@@ -859,26 +886,28 @@ function updateSetting(event) {
     const setting = $el.attr('data-setting');
     const val = $el.prop('checked');
     switch (setting) {
-        case 'debug': {
+        case 'debug':
+        case "inScreenEnabled":
+        {
             JSMO.ajax('settings-update', { setting: setting, value: val })
             .then(function(data) {
                 if (data.success) {
                     showToast('#translator-successToast', 'The setting has been updated.');
-                    config.debug = true;
+                    config[setting] = true;
                     log('Setting update succeeded:', data);
-                    config.debug = val;
+                    config[setting] = val;
                 }
                 else {
                     showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
                     error('Failed to update setting \'' + setting + '\': ' + data.error);
-                    $el.prop('checked', config.debug);
+                    $el.prop('checked', config[setting]);
                 }
 
             })
             .catch(function(err) {
                 showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
                 error('Failed to update the setting \'' + setting + '\'', err);
-                $el.prop('checked', config.debug);
+                $el.prop('checked', config[setting]);
             });
         }
         break;
@@ -971,7 +1000,7 @@ function activateTab(tab) {
 /**
  * Logs a message to the console when in debug mode
  */
- function log() {
+function log() {
     if (!config.debug) return
     let ln = '??'
     try {

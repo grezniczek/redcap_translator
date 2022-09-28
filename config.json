@@ -15,18 +15,31 @@
     ],
     "framework-version": 11,
     "permissions": [
+        "redcap_every_page_top"
     ],
     "enable-every-page-hooks-on-system-pages": true,
     "links": {
         "project": [
+           {
+              "name": "REDCap Translation Assistant",
+              "tt_name": "module_link_translate",
+              "icon": "fas fa-exchange-alt",
+              "url": "javascript:REDCap.EM.REDCapTranslationAssistant.Translate(); //"
+           }
         ],
         "control-center": [
            {
               "name": "REDCap Translation Assistant",
-              "tt_name": "module_link",
+              "tt_name": "module_link_plugin",
               "icon": "fas fa-language",
               "url": "plugin/index.php",
               "show-header-and-footer": true
+           },
+           {
+              "name": "REDCap Translation Assistant",
+              "tt_name": "module_link_translate",
+              "icon": "fas fa-exchange-alt",
+              "url": "javascript:REDCap.EM.REDCapTranslationAssistant.Translate(); //"
            }
         ]
      },
