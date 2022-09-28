@@ -7,7 +7,7 @@ require_once "classes/InjectionHelper.php";
  */
 class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalModule {
 
-
+    // Constants
     public const PACKAGES_SETTING_NAME = "packages";
     public const METADATAFILES_SETTING_NAME = "metadata-files";
     public const METADATAFILE_STORAGE_SETTING_PREFIX = "metadata-file-";
@@ -64,6 +64,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                         $payload["filename"] = $payload["name"].".json";
                         $store[$payload["name"]] = $payload;
                         $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
+
                         return [
                             "success" => true,
                             "data" => $payload
@@ -167,7 +168,49 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
 
 
+    public function store_translation($info, $strings, $annotations) {
+        // Purge all parts that should not be stored
+        $translation = $this->sanitize_translation($info);
+        // Store the file, in parts
+        $stored = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
+        // Created or updated?
+        $verb = isset($stored[$info["name"]]) ? "Updated" : "Created";
+        // Update storage
+        $translation["coverage"] = "TBD";
+        if (!isset($translation["iso"])) $translation["iso"] = "";
+        if (!isset($translation["timestamp"])) $translation["timestamp"] = "(???)";
+        $stored[$translation["name"]] = $translation;
+        $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
+        $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$translation["name"], $strings);
+        $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$translation["name"], $annotations);
+        $this->log("$verb translation file '{$translation["name"]}' ({$translation["filename"]}).");
+    }
 
+    public function get_translations() {
+        $translations = [];
+        $stored = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME);
+        foreach ($stored as $name => $entry) {
+            $translations[$name] = [
+                "name" => $entry["name"],
+                "localized-name" => $entry["localized-name"],
+                "iso" => $entry["iso"],
+                "coverage" => $entry["coverage"],
+                "updated" => $entry["timestamp"],
+            ];
+        }
+        return $translations;
+    }
+
+    public function get_translation($name) {
+        $stored = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
+        if (!array_key_exists($name, $stored)) return null;
+        $translation = $this->sanitize_translation($stored[$name]);
+        $strings = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name) ?? null;
+        $translation["strings"] = empty($strings) ? new \stdClass : $strings;
+        $annotations = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name) ?? null;
+        $translation["annotations"] = empty($annotations) ? new \stdClass : $annotations;
+        return $translation;
+    }
 
     public function validateCreateNewLang($data) {
         if (empty($data["name"])) {
@@ -198,7 +241,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     // Purge all parts that should not be stored
     public function sanitize_translation($json) {
         foreach (array_keys($json) as $key) {
-            if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url"], true)) {
+            if (!in_array($key, ["name","localized-name","iso","timestamp","maintained-by","url","filename"], true)) {
                 unset($json[$key]);
             }
         }
@@ -317,7 +360,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
         foreach ($strings as $key => $text) {
             // Normalize string before hashing
-            $text = $this->convert_ini_whitespace($text);
             $annotation = ""; // TODO - merge from prev
             $hash = $this->get_hash($text);
             $new = false; // TODO - based on prev file

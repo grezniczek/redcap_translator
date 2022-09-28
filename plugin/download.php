@@ -82,32 +82,21 @@ class Downloader {
 
     private static function get_translation($mode, $name, $based_on) {
         // Verify stored version
-        $stored = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
-        if (!array_key_exists($name, $stored)) return self::err_nofile;
-        $lang = $stored[$name];
+        $translation = self::$m->get_translation($name);
+        if ($translation == null) return self::err_nofile;
         // Download JSON file
         if ($mode == "translation-get-json") {
-            // Build and serve JSON 
-            $json = self::$m->sanitize_translation($lang);
-            $json["strings"] = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name);
-            if (empty($json["strings"])) $json["strings"] = new \stdClass;
-            $json["annotations"] = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name);
-            if (empty($json["annotations"])) $json["annotations"] = new \stdClass;
-            header('Content-Type: application/json; name="'.$lang["filename"].'"');
-            header('Content-Disposition: attachment; filename="'.$lang["filename"].'"');
-            print json_encode($json, JSON_PRETTY_PRINT);
+            header('Content-Type: application/json; name="'.$translation["filename"].'"');
+            header('Content-Disposition: attachment; filename="'.$translation["filename"].'"');
+            print json_encode($translation, JSON_PRETTY_PRINT);
             exit;
         }
         if ($mode == "translation-get-ini") {
-            $ini_name = $lang["name"].".ini";
-            $localized_name = $lang["localized-name"];
-            $strings = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name);
-            if (empty($strings)) {
-                die("Failed to parse JSON: " . json_last_error_msg());
-            }
+            $ini_name = $translation["name"].".ini";
+            $localized_name = $translation["localized-name"];
             $result = [];
             // TODO - consider metadata file!
-            foreach ($strings as $key => $item) {
+            foreach ($translation["strings"] as $key => $item) {
                 $result[$key] = "$key"; // TODO
             }
             header('Content-Type: text/plain; name="'.$ini_name.'"');
@@ -116,12 +105,8 @@ class Downloader {
             exit;
         }
         if ($mode == "translation-get-in-screen-ini") {
-            $ini_name = $lang["name"]."-In-Screen-$based_on.ini";
-            $localized_name = $lang["localized-name"];
-            $translation_strings = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name) ?? null;
-            if (empty($translation_strings)) {
-                die(self::err_nofile);
-            }
+            $ini_name = $translation["name"]."-In-Screen-$based_on.ini";
+            $localized_name = $translation["localized-name"];
             $metafile = self::$m->get_metadata_file($based_on);
             if (!$metafile) {
                 die(self::err_nometadata);
@@ -130,20 +115,20 @@ class Downloader {
             $idx = 0;
             foreach ($metafile["strings"] as $key => $meta) {
                 $item = $translation_strings[$key] ?? null;
-                $translation = $meta["text"]; // Default to text from metadata file
+                $text = $meta["text"]; // Default to text from metadata file
                 if ($item) {
                     if (($item["do-not-translate"] ?? null) !== true) {
                         // Try to find translation matching hash
                         if (isset($item["translations"][$meta["hash"]])) {
-                            $translation = $item["translations"][$meta["hash"]];
+                            $text = $item["translations"][$meta["hash"]];
                         }
                         // Or use non-hashed translation, if available
                         else if (isset($item["translations"][""])) {
-                            $translation = $item["translations"][""];
+                            $text = $item["translations"][""];
                         }
                     }
                 }
-                $result[$key] = self::$m->encode_invisible($idx) . $translation;
+                $result[$key] = self::$m->encode_invisible($idx) . $text;
                 $idx++;
             }
             $result[REDCapTranslatorExternalModule::IN_SCREEN_VERSION] = $based_on;

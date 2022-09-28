@@ -184,22 +184,8 @@ class REDCapTranslatorFileUploader {
                 "error" => "Invalid translation file. $error"
             ];
         }
-        // Purge all parts that should not be stored
-        $json = self::$m->sanitize_translation($json);
-        // Store the file, in parts
-        $stored = self::$m->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME) ?? [];
-        // Created or updated?
-        $verb = isset($stored[$name]) ? "Updated" : "Created";
-        // Update storage
-        $json["coverage"] = "TBD";
-        if (!isset($json["iso"])) $json["iso"] = "";
-        if (!isset($json["timestamp"])) $json["timestamp"] = "(???)";
         $json["filename"] = $file["name"];
-        $stored[$name] = $json;
-        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
-        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, $strings);
-        self::$m->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, $annotations);
-        self::$m->log("$verb translation file '{$name}' ({$file["name"]}).");
+        self::$m->store_translation($json, $strings, $annotations);
         $json["success"] = true;
         return $json;
     }
