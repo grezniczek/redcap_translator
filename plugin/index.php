@@ -29,6 +29,7 @@ class REDCapTranslatorPlugin {
             "csrfToken" => self::$m->getCSRFToken(),
             "invisibleChar1" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_1,
             "invisibleChar2" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_2,
+            "password" => self::$m->get_password(),
             "state" => self::$m->get_state(),
         );
         // Metadata files
@@ -123,7 +124,7 @@ REDCapTranslatorPlugin::init($module);
                 </div>
             </p>
             <p class="small">
-                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On survey pages, manually call <i>REDCap.EM.REDCapTranslationAssistant.Translate()</i> from the console (F12).
+                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On non-authenticated pages or survey pages, manually call <i>REDCap.EM.RUB.REDCapInScreenTranslator.translate(<b>***</b>)</i> with your password from the console (F12).
             </p>
 
         </div>
@@ -459,53 +460,30 @@ REDCapTranslatorPlugin::init($module);
             </p>
             <div class="em-option">
                 <p class="em-description">
-                    <label for="switch-debug">
+                    <label for="option-debug">
                         <span class="switch switch-xs switch-inline">
-                            <input type="checkbox" class="switch" data-type="setting" data-setting="debug" id="switch-debug">
-                            <label for="switch-debug"></label>
+                            <input type="checkbox" class="switch" data-type="setting" data-setting="debug" id="option-debug">
+                            <label for="option-debug"></label>
                         </span>
                         Debug mode (status messages will be output to the browser console)
                     </label>
+                </p>
+            </div>
+            <div class="em-option">
+                <div class="form-inline">
+                    <label class="mr-2" for="option-password">Password for non-authenticated pages:</label>
+                    <input class="form-control form-control-sm" type="text" minlength="10" data-type="setting" data-setting="password" />
+
+                </div>
+                <p class="small">
+                    <b>Password rules:</b> The password must be at least 10 characters long and include at least one upper and lower case letter and one digit.
                 </p>
             </div>
         </div>
         <?php #endregion 
         ?>
     </div>
-    <?php #region Misc 
-    ?>
-    <!-- Success toast -->
-    <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 99999; right: 0; bottom: 0;">
-        <div id="translator-successToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000" data-animation="true" data-autohide="true">
-            <div class="toast-header">
-                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false">
-                    <rect width="100%" height="100%" fill="#28a745"></rect>
-                </svg>
-                <strong class="mr-auto">Success</strong>
-                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="toast-body" data-content="toast"></div>
-        </div>
-    </div>
-    <!-- Error toast -->
-    <div class="position-fixed bottom-0 right-0 p-3" style="z-index: 99999; right: 0; bottom: 0;">
-        <div id="translator-errorToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="2000" data-animation="true" data-autohide="false">
-            <div class="toast-header">
-                <svg class="bd-placeholder-img rounded mr-2" width="20" height="20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice" focusable="false">
-                    <rect width="100%" height="100%" fill="#dc3545"></rect>
-                </svg>
-                <strong class="mr-auto">ERROR</strong>
-                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="toast-body" data-content="toast"></div>
-        </div>
-    </div>
-    <?php #endregion 
-    ?>
+    <?php require dirname(__FILE__)."/../toasts.php"; ?>
 </div>
 <script>
     window.REDCap.EM.RUB.REDCapTranslator.init(<?= REDCapTranslatorPlugin::get_settings() ?>);

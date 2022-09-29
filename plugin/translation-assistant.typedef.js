@@ -21,6 +21,7 @@
  *  currentTranslation: string
  *  currentTranslationBasedOn: string
  *  inScreenEnabled: boolean
+ *  password: string
  * }}
  */
 

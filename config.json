@@ -54,7 +54,13 @@
         "package-get-strings",
         "package-get-zip",
         "package-delete",
-        "settings-update"
+        "settings-update",
+        "load-translation-data",
+        "update-translation"
+    ],
+    "no-auth-ajax-actions": [
+        "load-translation-data",
+        "update-translation"
     ],
     "crons": [
         {

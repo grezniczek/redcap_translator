@@ -43,16 +43,56 @@ THIS.init = function(data) {
     });
 };
 
+var translationInitialized = false;
+var translationInitializing = false;
+
 THIS.translate = function() {
-    log('Starting translation of \'' + config.translation + '\' based on ' + config.basedOn + ' metadata ...');
-    loadTranslationData();
+    if (translationInitializing) {
+        warn('Already initializing. Please be patient ...');
+    }
+    else {
+        translationInitializing = true;
+        if (!translationInitialized) {
+            log('Starting translation of \'' + config.name + '\' based on ' + config.basedOn + ' metadata ...');
+            setupTranslation();
+        }
+        else {
+            injectTranslationHooks();
+        }
+    }
 }
 
 //#endregion
 
 
-function loadTranslationData() {
+function setupTranslation() {
+    // Load data
+    JSMO.ajax('load-translation-data', { name: config.name, basedOn: config.basedOn })
+    .then(function(response) {
+        if (response.success) {
+            showToast('#translator-successToast', 'Translation data has been loaded.');
+            log('Translation data has been loaded:', response.data);
+            config.metadata = response.data.metadata;
+            config.translation = response.data.translation;
+            translationInitialized = true;
+        }
+        else {
+            showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
+            error('Failed to load translation data:', response.error);
+            translationInitializing = false;
+        }
+    })
+    .catch(function(err) {
+        showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
+        error('Failed to load translation data:', err);
+        translationInitializing = false;
+    });
+}
 
+function injectTranslationHooks() {
+    log('Injecting hooks ...');
+
+    translationInitializing = false;
 }
 
 //#region Helpers
@@ -70,6 +110,18 @@ function loadTranslationData() {
         jsmo = jsmo[part];
     }
     return jsmo;
+}
+
+/**
+ * Shows a message in a toast
+ * @param {string} selector 
+ * @param {string} msg 
+ */
+ function showToast(selector, msg) {
+    const $toast = $(selector)
+    $toast.find('[data-content=toast]').html(msg)
+    // @ts-ignore
+    $toast.toast('show')
 }
 
 //#endregion

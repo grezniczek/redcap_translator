@@ -66,7 +66,7 @@ THIS.init = function(data) {
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('translate');
+        activateTab('settings');
     });
 };
 

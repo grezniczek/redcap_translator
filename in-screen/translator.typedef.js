@@ -11,8 +11,9 @@
  * @type {{
  *  debug: boolean
  *  jsmoName: string
- *  translation: string
+ *  name: string
  *  basedOn: string
- 
+ *  metadata: Object
+ *  translation: Object
  * }}
  */

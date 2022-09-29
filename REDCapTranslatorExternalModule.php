@@ -9,6 +9,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     // Constants
     public const PACKAGES_SETTING_NAME = "packages";
+    public const PASSWORD_SETTING_NAME = "no-auth-password";
     public const METADATAFILES_SETTING_NAME = "metadata-files";
     public const METADATAFILE_STORAGE_SETTING_PREFIX = "metadata-file-";
     public const TRANSLATIONS_SETTING_NAME = "translations";
@@ -188,9 +189,37 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 ];
         }
     }
+    
 
+    public function get_password() {
+        $pwd = $this->getSystemSetting(self::PASSWORD_SETTING_NAME) ?? null;
+        if (empty($pwd)) {
+            // Generate a random password
+            $pwd = "random"; // TODO
+            $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $pwd);
+        }
+        return $pwd;
+    }
 
-    function inject_in_screen_code($page) {
+    public function set_password($new_password) {
+        // Some checks
+        if (mb_strlen($new_password) < 10) {
+            return "The password must consist of at least 10 characters.";
+        }
+        if (!preg_match('/[A-Z]/', $new_password)) {
+            return "The password must include at least one upper case letter (A-Z).";
+        }
+        if (!preg_match('/[a-z]/', $new_password)) {
+            return "The password must include at least one lower case letter (a-z).";
+        }
+        if (!preg_match('/[0-9]/', $new_password)) {
+            return "The password must include at least one digit (0-9).";
+        }
+        $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $new_password);
+        return "";
+    }
+
+    private function inject_in_screen_code($page) {
         // Skip this module's plugin page
         if ($page == APP_URL_EXTMOD_RELATIVE."index.php" && $_REQUEST["prefix"] == $this->PREFIX) return;
         // Do nothing if in-screen translation is disabled
@@ -205,11 +234,13 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $settings = array(
             "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
             "jsmoName" => $this->getJavascriptModuleObjectName(),
-            "translation" => $current_translation["name"],
+            "name" => $current_translation["name"],
             "basedOn" => $current_translation["based-on"],
         );
         $json = json_encode($settings, JSON_FORCE_OBJECT);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
+        require dirname(__FILE__)."/toasts.php";
+
     }
 
     public function store_translation($info, $strings, $annotations) {
