@@ -14,8 +14,8 @@ class REDCapTranslatorPlugin {
     {
         self::$m = $m;
         $m->initializeJavascriptModuleObject();
-        $m->ih->css("plugin/translator.css");
-        $m->ih->js("plugin/translator.js");
+        $m->ih->css("plugin/translation-assistant.css");
+        $m->ih->js("plugin/translation-assistant.js");
     }
 
     static function get_settings()
@@ -30,16 +30,18 @@ class REDCapTranslatorPlugin {
             "invisibleChar1" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_1,
             "invisibleChar2" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_2,
             "state" => self::$m->get_state(),
-            "inScreenEnabled" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::INSCREENENABLED_SETTING_NAME) === true,
         );
+        // Metadata files
+        $metadata_files = self::$m->get_metadata_files();
+        $settings["metadataFiles"] = $metadata_files;
         // Translations
         $settings["translations"] = self::$m->get_translations();
-        $current_translation = self::$m->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_SETTING_NAME) ?? "";
-        $settings["currentTranslation"] = in_array($current_translation, $settings["translations"], true) ? $current_translation : "";
-        // Metadata fileds
-        $metadata_files = self::$m->get_metadata_files();
-        // TODO
-        $settings["metadataFiles"] = $metadata_files;
+        $current_translation = self::$m->get_current_translation();
+        $settings["currentTranslation"] = $current_translation["name"];
+        $settings["currentTranslationBasedOn"] = $current_translation["based-on"];
+        // In screen
+        $in_screen_enabled = self::$m->getSystemSetting(REDCapTranslatorExternalModule::INSCREEN_ENABLED_SETTING_NAME) === true;
+        $settings["inScreenEnabled"] = $in_screen_enabled;
         // Packages
         $packages = [];
         $store = self::$m->getSystemSetting(REDCapTranslatorExternalModule::PACKAGES_SETTING_NAME);
@@ -107,16 +109,21 @@ REDCapTranslatorPlugin::init($module);
             </p>
             <p>
                 <div class="form-inline">
-                    <label class="mr-2" for="current-translation-file">Currently active translation file:</label>
-                    <select id="current-translation-file" class="form-control mr-2" data-em-para="current-translation"></select>
-                    <div class="custom-control custom-switch ml-3" style="margin-top:-2px !important;">
-                        <input type="checkbox" data-type="setting" class="custom-control-input" id="in-screen-switch" data-setting="inScreenEnabled">
-                        <label class="custom-control-label" style="padding-top: 2px;" for="in-screen-switch">Enable in-screen translation</label>
-                    </div>
+                    <label class="mr-2" for="current-translation-file">Translate</label>
+                    <select data-type="setting" data-setting="currentTranslation" id="current-translation-file" class="form-control mr-2"></select>
+                    <label class="mr-2 ml-2" for="current-translation-based-on">based on </label>
+                    <select data-type="setting" data-setting="currentTranslationBasedOn" id="current-translation-based-on" class="form-control mr-2"></select>
+                    <label class="ml-2">metadata.</label>
+                </div>
+            </p>
+            <p>
+                <div class="custom-control custom-switch ml-3" style="margin-top:-2px !important;">
+                    <input type="checkbox" data-type="setting" data-setting="inScreenEnabled" class="custom-control-input" id="in-screen-switch">
+                    <label class="custom-control-label" style="padding-top: 2px;" for="in-screen-switch">Enable in-screen translation</label>
                 </div>
             </p>
             <p class="small">
-                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On survey pages, manually call <i>REDCap.EM.REDCapTranslationAssistant.Translate()</i> from the console (F12).
+                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On survey pages, manually call <i>REDCap.EM.REDCapTranslationAssistant.Translate()</i> from the console (F12).
             </p>
 
         </div>

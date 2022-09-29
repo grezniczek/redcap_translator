@@ -1,9 +1,11 @@
-/* REDCap Translator EM */
+/* REDCap Translation Assistant EM */
 
 // @ts-check
 ;(function() {
 
 //#region Variables and Initialization
+
+const APP_NAME = 'REDCap Translation Assistant';
 
 if (typeof window['REDCap'] == 'undefined') {
     window['REDCap'] = {
@@ -44,8 +46,6 @@ THIS.init = function(data) {
         // General
         $('div.translator-em').on('click', handleActions);
         // Translate
-        $('div.translator-em [data-em-para="current-translation"]').on('change', setCurrentTranslationFile);
-        
         // Translations 
         $('div.translator-em [data-uploader="translation-json"] input[type="file"]').on('change', uploadTranslationJson);
         // Metadata 
@@ -55,7 +55,7 @@ THIS.init = function(data) {
         // Tools
         $('div.translator-em [data-uploader="convert-ini-to-json"] input[type="file"]').on('change', convertIniToJson);
         $('div.translator-em [data-uploader="convert-mlm-to-json"] input[type="file"]').on('change', convertMlmToJson);
-        // Settings
+        // Settings (all tabs)
         $('div.translator-em [data-type="setting"]').on('change', updateSetting);
 
 
@@ -83,7 +83,16 @@ function renderTranslateTab() {
 }
 
 function updateTranslateTab() {
-    addVersions($('[data-nav-tab="translate"] select[data-em-para="current-translation"]'), sortByVersion(config.translations));
+    addVersions(
+        $('[data-nav-tab="translate"] select[data-setting="currentTranslation"]'), 
+        sortByVersion(config.translations),
+        config.currentTranslation,
+        false
+    );
+    addVersions(
+        $('[data-nav-tab="translate"] select[data-setting="currentTranslationBasedOn"]'), sortByVersion(config.metadataFiles),
+        config.currentTranslationBasedOn, false
+    );
 }
 
 /**
@@ -222,14 +231,18 @@ function handleTranslationsAction(action, name, basedOn) {
     }
 }
 
+
+function updateTranslationsTab() {
+    // Versions
+    addVersions($('[data-nav-tab="translations"] select[data-em-para="translation-based-on"]'), sortByVersion(config.metadataFiles));
+}
+
 /**
  * Renders the 'Translations' tab.
  */
 function renderTranslationsTab() {
-    // Versions
-    addVersions($('[data-nav-tab="translations"] select[data-em-para="translation-based-on"]'), sortByVersion(config.metadataFiles));
     log('Updating translations:', config.translations);
-
+    updateTranslationsTab();
     const $tbody = $('div.translator-em tbody.translations-body');
     // Remove all rows
     $tbody.children().remove();
@@ -527,8 +540,8 @@ function uploadZip(event) {
 
 function updateMetadataTab() {
     // Versions
-    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-based-on"]'), sortByVersion(config.packages));
-    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-merge-from"]'), sortByVersion(config.metadataFiles));
+    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-based-on"]'), sortByVersion(config.packages), '', false);
+    addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-merge-from"]'), sortByVersion(config.metadataFiles), config.currentTranslationBasedOn, true);
 }
 
 function renderMetadataTab() {
@@ -598,6 +611,8 @@ function handleMetadataAction(action, version) {
             if (response.success) {
                 delete config.metadataFiles[version];
                 renderMetadataTab();
+                updateTranslateTab();
+                updateTranslationsTab();
                 showToast('#translator-successToast', 'Version \'' + version + '\' has been deleted.');
             }
             else {
@@ -673,6 +688,8 @@ function uploadMetadataJson(event) {
                         // @ts-ignore
                         uploadMetadataJson(null);
                         renderMetadataTab();
+                        updateTranslateTab();
+                        updateTranslationsTab();
                     }
                     else {
                         $file.addClass('is-invalid').removeClass('is-valid');
@@ -878,43 +895,48 @@ function convertMlmToJson(event) {
 //#region Settings
 
 /**
- * Handles actions (mouse clicks on links, buttons)
+ * Updates boolean settings on the server
  * @param {JQuery.TriggeredEvent} event 
  */
 function updateSetting(event) {
     const $el = $(event.target);
-    const setting = $el.attr('data-setting');
-    const val = $el.prop('checked');
+    const setting = $el.attr('data-setting') ?? '';
+    let val = null;
     switch (setting) {
         case 'debug':
-        case "inScreenEnabled":
-        {
-            JSMO.ajax('settings-update', { setting: setting, value: val })
-            .then(function(data) {
-                if (data.success) {
-                    showToast('#translator-successToast', 'The setting has been updated.');
-                    config[setting] = true;
-                    log('Setting update succeeded:', data);
-                    config[setting] = val;
-                }
-                else {
-                    showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
-                    error('Failed to update setting \'' + setting + '\': ' + data.error);
-                    $el.prop('checked', config[setting]);
-                }
-
-            })
-            .catch(function(err) {
-                showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
-                error('Failed to update the setting \'' + setting + '\'', err);
-                $el.prop('checked', config[setting]);
-            });
-        }
-        break;
+        case 'inScreenEnabled':
+            val = $el.prop('checked');
+            break;
+        case 'currentTranslation':
+        case 'currentTranslationBasedOn':
+            val = $el.val();
+            break;
         default: {
             warn('Unknown setting \'' + setting + '\'.', event);
         }
         break;
+    }
+    if (val != null) {
+        JSMO.ajax('settings-update', { setting: setting, value: val })
+        .then(function(data) {
+            if (data.success) {
+                showToast('#translator-successToast', 'The setting has been updated.');
+                config[setting] = true;
+                log('Setting update succeeded:', data);
+                config[setting] = val;
+            }
+            else {
+                showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
+                error('Failed to update setting \'' + setting + '\': ' + data.error);
+                $el.prop('checked', config[setting]);
+            }
+
+        })
+        .catch(function(err) {
+            showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
+            error('Failed to update the setting \'' + setting + '\'', err);
+            $el.prop('checked', config[setting]);
+        });
     }
 }
 
@@ -1047,7 +1069,7 @@ function error() {
  * @param {IArguments} args 
  */
 function log_print(ln, mode, args) {
-    var prompt = 'REDCap Translator [' + ln + ']'
+    var prompt = APP_NAME + ' [' + ln + ']'
     switch(args.length) {
         case 1: 
             console[mode](prompt, args[0])
@@ -1137,12 +1159,15 @@ function resolveJSMO(name) {
  * 
  * @param {JQuery<HTMLElement>} $select 
  * @param {string[]} source 
+ * @param {string} current 
+ * @param {boolean} withEmpty
  */
-function addVersions($select, source) {
-    $select.html('');
+function addVersions($select, source, current = '', withEmpty = false) {
+    $select.html(withEmpty ? '<option value="">None</option>' : '');
+
     for (const key of source) {
         const $opt = $('<option></option>');
-        $opt.prop('selected', key == 'current');
+        $opt.prop('selected', key == current);
         $opt.val(key);
         $opt.text(key);
         $select.append($opt);

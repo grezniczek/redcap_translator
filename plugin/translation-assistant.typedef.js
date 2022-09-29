@@ -19,6 +19,7 @@
  *  packages: object<string,PackageData>
  *  translations: object<string, TranslationData>
  *  currentTranslation: string
+ *  currentTranslationBasedOn: string
  *  inScreenEnabled: boolean
  * }}
  */

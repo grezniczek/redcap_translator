@@ -24,7 +24,7 @@
               "name": "REDCap Translation Assistant",
               "tt_name": "module_link_translate",
               "icon": "fas fa-exchange-alt",
-              "url": "javascript:REDCap.EM.REDCapTranslationAssistant.Translate(); //"
+              "url": "javascript:REDCap.EM.RUB.REDCapInScreenTranslator.translate(); //"
            }
         ],
         "control-center": [
@@ -39,7 +39,7 @@
               "name": "REDCap Translation Assistant",
               "tt_name": "module_link_translate",
               "icon": "fas fa-exchange-alt",
-              "url": "javascript:REDCap.EM.REDCapTranslationAssistant.Translate(); //"
+              "url": "javascript:REDCap.EM.RUB.REDCapInScreenTranslator.translate(); //"
            }
         ]
      },

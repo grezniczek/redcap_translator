@@ -15,12 +15,13 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
     public const CURRENT_TRANSLATION_SETTING_NAME = "current-translate";
-    public const INSCREENENABLED_SETTING_NAME = "inscreen-enabled";
+    public const INSCREEN_ENABLED_SETTING_NAME = "inscreen-enabled";
+    public const CURRENT_TRANSLATION_BASEDON_SETTING_NAME = "current-translate-basedon";
     public const DEBUG_SETTING_NAME = "debug-mode";
     public const INVISIBLE_CHAR_1 = "‌"; // U+200C Zero-width non-joiner
     public const INVISIBLE_CHAR_2 = "‍"; // U+200D Zero-width joiner
-    public const IN_SCREEN_VERSION = "redcap_translation_assistant_version";
-    public const IN_SCREEN_KEYS = "redcap_translation_assistant_keys";
+    public const IN_SCREEN_VERSION_INI_KEY = "redcap_translation_assistant_version";
+    public const IN_SCREEN_KEYS_INI_KEY = "redcap_translation_assistant_keys";
 
     /**
      * @var InjectionHelper
@@ -38,16 +39,17 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         }
         if ($link["tt_name"] == "module_link_translate") {
             // TODO - suppress on plugin page
-            return $this->getSystemSetting(self::INSCREENENABLED_SETTING_NAME) === true ? $link : null;
+            return $this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) === true ? $link : null;
         }
         return $link;
     }
 
     function redcap_every_page_top($project_id = null) {
-
-
+        $page = defined("PAGE_FULL") ? PAGE_FULL : "";
+        if ($page == "") return; // Should never be the case
+        $this->inject_in_screen_code($page);
     }
-
+    
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
         switch($action) {
             case "create-new-translation":
@@ -145,19 +147,40 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             case "settings-update":
                 $setting = $payload["setting"] ?? "";
                 $value = $payload["value"];
-                if ($setting == "debug") {
-                    $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
-                    return ["success" => true];
-                }
-                if ($setting == "inScreenEnabled") {
-                    $this->setSystemSetting(self::INSCREENENABLED_SETTING_NAME, $value === true);
-                    return ["success" => true];
+                $error = "";
+                switch ($setting) {
+                    case "debug":
+                        $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
+                        break;
+                    case "inScreenEnabled":
+                        $this->setSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME, $value === true);
+                        break;
+                    case "currentTranslation":
+                        $translations = $this->get_translations();
+                        if (array_key_exists($value, $translations)) {
+                            $this->setSystemSetting(self::CURRENT_TRANSLATION_SETTING_NAME, $value);
+                        }
+                        else {
+                            $error = "There is no translation named '$value'.";
+                        }
+                        break;
+                    case "currentTranslationBasedOn":
+                        $metadata_files = $this->get_metadata_files();
+                        if (array_key_exists($value, $metadata_files)) {
+                            $this->setSystemSetting(self::CURRENT_TRANSLATION_BASEDON_SETTING_NAME, $value);
+                        }
+                        else {
+                            $error = "There is no metadata file for '$value'.";
+                        }
+                        break;
+                    default:
+                        $error = "Unknown setting '$setting'.";
+                        break;
                 }
                 return [
-                    "success" => false,
-                    "error" => "Unknown setting '$setting'."
+                    "success" => empty($error),
+                    "error" => $error,
                 ];
-                break;
             default:
                 return [
                     "success" => false,
@@ -167,6 +190,27 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
+    function inject_in_screen_code($page) {
+        // Skip this module's plugin page
+        if ($page == APP_URL_EXTMOD_RELATIVE."index.php" && $_REQUEST["prefix"] == $this->PREFIX) return;
+        // Do nothing if in-screen translation is disabled
+        if ($this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) !== true) return;
+        // Check if translation and metadata are valid
+        $current_translation = $this->get_current_translation();
+        if (empty($current_translation["name"]) || empty($current_translation["based-on"])) return;
+
+        $this->initializeJavascriptModuleObject();
+        $this->ih->js("in-screen/translator.js");
+        // Prepare initialization object
+        $settings = array(
+            "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
+            "jsmoName" => $this->getJavascriptModuleObjectName(),
+            "translation" => $current_translation["name"],
+            "basedOn" => $current_translation["based-on"],
+        );
+        $json = json_encode($settings, JSON_FORCE_OBJECT);
+        print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
+    }
 
     public function store_translation($info, $strings, $annotations) {
         // Purge all parts that should not be stored
@@ -511,6 +555,24 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
         if ($n === false) $n = 0;
         return $n;
+    }
+
+
+    public function get_current_translation() {
+        $translations = $this->get_translations();
+        $metadata_files = $this->get_metadata_files();
+        $current_translation = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_SETTING_NAME) ?? "";
+        if (!array_key_exists($current_translation, $translations)) {
+            $current_translation = count($translations) ? array_key_first($translations) : "";
+        }
+        $current_translation_based_on = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_BASEDON_SETTING_NAME) ?? "";
+        if (!array_key_exists($current_translation_based_on, $metadata_files)) {
+            $current_translation_based_on = count($metadata_files) ? array_key_first($metadata_files) : "";
+        }
+        return [ 
+            "name" => $current_translation, 
+            "based-on" => $current_translation_based_on 
+        ];
     }
 
 
