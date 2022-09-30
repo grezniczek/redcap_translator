@@ -18,5 +18,6 @@
  *  code1: string
  *  metadata: Object
  *  translation: Object
+ *  keys: Object
  * }}
  */
