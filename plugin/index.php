@@ -27,8 +27,6 @@ class REDCapTranslatorPlugin {
             "uploadUrl" => self::$m->getUrl("plugin/upload.php"),
             "downloadUrl" => self::$m->getUrl("plugin/download.php"),
             "csrfToken" => self::$m->getCSRFToken(),
-            "invisibleChar1" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_1,
-            "invisibleChar2" => REDCapTranslatorExternalModule::INVISIBLE_CHAR_2,
             "password" => self::$m->get_password(),
             "state" => self::$m->get_state(),
         );
