@@ -19,8 +19,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const INSCREEN_ENABLED_SETTING_NAME = "inscreen-enabled";
     public const CURRENT_TRANSLATION_BASEDON_SETTING_NAME = "current-translate-basedon";
     public const DEBUG_SETTING_NAME = "debug-mode";
-    public const CODE_START_ENCODING = "​"; // U+200B Zero-width space
-    public const CODE_ZERO_ENCODING = "‌"; // U+200C Zero-width non-joiner
+    public const CODE_START_ENCODING = "‌"; // U+200C Zero-width non-joiner; something that does not screw up spacing (as e.g., zero-width space)
+    public const CODE_ZERO_ENCODING = "​"; // U+200B Zero-width space
     public const CODE_ONE_ENCODING = "‍"; // U+200D Zero-width joiner
     public const IN_SCREEN_VERSION_INI_KEY = "redcap_translation_assistant_version";
     public const IN_SCREEN_KEYS_INI_KEY = "redcap_translation_assistant_keys";
@@ -164,13 +164,29 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                         "error" => "Invalid password."
                     ];
                 }
+                // Valid translation and metadata reference?
                 if (!$this->validate_translation_metadata($name, $based_on)) {
                     return [
                         "success" => false,
                         "error" => "Cannot translate '$name' based on '$based_on'. Verify that both items, translation and metadata file exist."
                     ];
                 }
-                $data = $this->get_translation_data($name, $based_on);
+                // Is an appropriate in-screen translation file loaded?
+                $ini_version = $GLOBALS["lang"]["redcap_translation_assistant_version"] ?? "";
+                $ini_keys = $GLOBALS["lang"]["redcap_translation_assistant_keys"] ?? "";
+                if ($ini_keys == "") {
+                    return [
+                        "success" => false,
+                        "error" => "In order to use in-screen translation, a matching in-screen translation file must be set as REDCap's langauge file (system and project context)."
+                    ];
+                }
+                if ($ini_version != $based_on) {
+                    return [
+                        "success" => false,
+                        "error" => "The in-screen translation INI's version ($ini_version) does not match the version of the metadata file ($based_on)."
+                    ];
+                }
+                $data = $this->get_translation_data($name, $based_on, $ini_keys);
                 return [
                     "success" => true,
                     "data" => $data
@@ -190,13 +206,15 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             array_key_exists($based_on, $this->get_metadata_files()); 
     }
 
-    private function get_translation_data($name, $based_on) {
+    private function get_translation_data($name, $based_on, $ini_keys) {
         $translation = $this->get_translation($name);
         $metadata = $this->get_metadata_file($based_on);
+        $keys = explode(",", $ini_keys);
         // TODO: Any filtering / removing of unneeded stuff?
         return [
             "translation" => $translation,
-            "metadata" => $metadata
+            "metadata" => $metadata,
+            "keys" => $keys,
         ];
     }
 

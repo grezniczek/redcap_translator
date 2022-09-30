@@ -78,9 +78,11 @@ function setupTranslation(password = '') {
         if (response.success) {
             config.metadata = response.data.metadata;
             config.translation = response.data.translation;
+            config.keys = response.data.keys; 
             updateProgressModal('Preparing page for translation ...', 5);
             injectTranslationHooks();
             translationInitialized = true;
+            log('Translation, metadata, and keys loaded.', config);
         }
         else {
             errorMsg = response.error;
@@ -103,17 +105,15 @@ function setupTranslation(password = '') {
 
 function injectTranslationHooks() {
     log('Injecting hooks ...');
-
     const $childLess = $('*:not(:has(*))').not('script');
     const nTotal = $('*').not('script').length;
     log ('Processing ' + nTotal + ' elements (' + $childLess.length + ' leaves).');
 
-    // Cycle through all elements
+    // Compile a list of all candidate HTML elements
     /**
      * @type HTMLElement[]
      */
     const elements = [];
-
     $childLess.each(function() {
         const $this = $(this);
         const content = getTextAndAttributes(this);
@@ -129,15 +129,30 @@ function injectTranslationHooks() {
                 if (text.includes(config.codeStart)) {
                     const el = $parent.get(0);
                     if (el != null) elements.push(el);
-                    break;
                 }
                 $parent = $parent.parent();
             }
         }
     });
+    // Now enhance
+    let i = 0; // Keep track of progress
     for (const el of elements) {
+        i++;
+        // Already processed? Skip
+        if (el.getAttribute('data-inscreen-translated') == '1') continue;
+        // Replace all strings that are in text content in the html content
+        let html = el.innerHTML;
+        let text = el.innerText;
+        let pos = text.indexOf(config.codeStart);
+        while (pos > -1) {
+            const code = text.substring(pos, 16);
+            
+            pos = text.indexOf(config.codeStart, pos + 1);
+        }
+
 
         // Look through all text nodes and attributes
+
         // Wrap accordingly or add class
         $(el).attr('data-inscreen-translator-status', '1');
 
