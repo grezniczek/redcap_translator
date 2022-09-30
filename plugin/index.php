@@ -96,8 +96,11 @@ REDCapTranslatorPlugin::init($module);
         <?php #region Info 
         ?>
         <div data-nav-tab="info">
-            <p>
-                On this tab, ...
+            <p class="red">
+                On this tab, ... 
+            </p>
+            <p class="red">
+                TODO: Provide an overview of how this is all intended to work. Maybe include some graphs. Links to GitHub, etc.
             </p>
         </div>
         <?php #endregion 
@@ -105,7 +108,7 @@ REDCapTranslatorPlugin::init($module);
         <?php #region Translate 
         ?>
         <div data-nav-tab="translate" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <p>
@@ -126,14 +129,16 @@ REDCapTranslatorPlugin::init($module);
             <p class="small">
                 <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On non-authenticated pages or survey pages, manually call <i>REDCap.EM.RUB.REDCapInScreenTranslator.translate(<b>***</b>)</i> with your password from the console (F12).
             </p>
-
+            <p class="red">
+                TODO: Provide a button to load translation data to edit translation/metadata here on this page by selecting a language string (search box) and providing a UI to edit the string and set metadata. Provide some filters such as "not translated", metadata states, etc...
+            </p>
         </div>
         <?php #endregion 
         ?>
         <?php #region Translations 
         ?>
         <div data-nav-tab="translations" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <h2>Manage and upload translation files</h2>
@@ -239,7 +244,7 @@ REDCapTranslatorPlugin::init($module);
         <?php #region Metadata 
         ?>
         <div data-nav-tab="metadata" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <h2>Manage REDCap strings metadata &amp; annotations files</h2>
@@ -346,7 +351,7 @@ REDCapTranslatorPlugin::init($module);
         <?php #region Packages 
         ?>
         <div data-nav-tab="packages" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <h2>Manage and upload REDCap install or update packages</h2>
@@ -411,7 +416,7 @@ REDCapTranslatorPlugin::init($module);
         <?php #region Tools 
         ?>
         <div data-nav-tab="tools" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <h2>Convert a language INI file to a translation JSON file</h2>
@@ -449,13 +454,17 @@ REDCapTranslatorPlugin::init($module);
             <p class="small">
                 Once uploaded, the converted file will start to download immediately. Any error messages are contained within the downloaded file.
             </p>
+            <hr>
+            <h2>Modify a language INI file by adding prefixes / postfixes</h2>
+            <p>Use this tool to create specialized language INI files by prepending or appending strings to language entries. Use <b>#key#</b> and <b>#text#</b> to inject the language key and original (English) text, respectively. You may choose a preset. As soon as the source INI file is loaded, the modification and download will start.</p>
+            <p class="red">TODO - Uploader field and 2x input for prefix / postfix - maybe add a dropdown with presets that can be defined in the module configuration.</p>
         </div>
         <?php #endregion 
         ?>
         <?php #region Settings 
         ?>
         <div data-nav-tab="settings" class="d-none">
-            <p>
+            <p class="red">
                 On this tab, ...
             </p>
             <div class="em-option">

@@ -30,6 +30,14 @@
     min-width: 6em !important;
 }
 
+.translator-em input:invalid:not(:placeholder-shown) {
+    border: 1px dotted red;
+}
+.translator-em input:invalid:focus:not(:placeholder-shown) {
+    background: pink;
+}
+
+
 
 .switch {
     font-size: 1rem;

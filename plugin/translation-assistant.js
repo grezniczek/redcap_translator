@@ -66,7 +66,7 @@ THIS.init = function(data) {
         renderPackagesTab();
         renderToolsTab();
         renderSettingsTab();
-        activateTab('settings');
+        activateTab('translate');
     });
 };
 
@@ -95,14 +95,6 @@ function updateTranslateTab() {
     );
 }
 
-/**
- * Uploads a language JSON file.
- * @param {JQuery.TriggeredEvent} event
- */
-function setCurrentTranslationFile(event) {
-    const newCurrent = ($('[data-nav-tab="translate"] select[data-em-para="current-translation"]').val() ?? '').toString();
-    log('Current translation changed: ' + newCurrent);
-}
 
 //#endregion
 
@@ -537,7 +529,6 @@ function uploadZip(event) {
 
 //#region Metadata
 
-
 function updateMetadataTab() {
     // Versions
     addVersions($('[data-nav-tab="metadata"] select[data-em-para="gen-metadata-based-on"]'), sortByVersion(config.packages), '', false);
@@ -720,7 +711,7 @@ function uploadMetadataJson(event) {
 //#region Tools
 
 function renderToolsTab() {
-
+    // Nothing to do (yet)
 }
 
 /**
@@ -895,7 +886,7 @@ function convertMlmToJson(event) {
 //#region Settings
 
 /**
- * Updates boolean settings on the server
+ * Updates settings on the server
  * @param {JQuery.TriggeredEvent} event 
  */
 function updateSetting(event) {
@@ -909,6 +900,7 @@ function updateSetting(event) {
             break;
         case 'currentTranslation':
         case 'currentTranslationBasedOn':
+        case 'password':
             val = $el.val();
             break;
         default: {
@@ -928,7 +920,12 @@ function updateSetting(event) {
             else {
                 showToast('#translator-errorToast', 'Failed to update the setting. Please check the console for details.');
                 error('Failed to update setting \'' + setting + '\': ' + data.error);
-                $el.prop('checked', config[setting]);
+                if (typeof val == 'boolean') {
+                    $el.prop('checked', config[setting]);
+                }
+                else {
+                    $el.val(config[setting]);
+                }
             }
 
         })
@@ -943,6 +940,7 @@ function updateSetting(event) {
 function renderSettingsTab() {
     const $tab = $('div[data-nav-tab="settings"]');
     $tab.find('input[data-setting="debug"]').prop('checked', config.debug);
+    $tab.find('input[data-setting="password"]').val(config.password);
 }
 
 //#endregion

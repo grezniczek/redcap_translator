@@ -146,48 +146,94 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 }
                 break;
             case "settings-update":
-                $setting = $payload["setting"] ?? "";
-                $value = $payload["value"];
-                $error = "";
-                switch ($setting) {
-                    case "debug":
-                        $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
-                        break;
-                    case "inScreenEnabled":
-                        $this->setSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME, $value === true);
-                        break;
-                    case "currentTranslation":
-                        $translations = $this->get_translations();
-                        if (array_key_exists($value, $translations)) {
-                            $this->setSystemSetting(self::CURRENT_TRANSLATION_SETTING_NAME, $value);
-                        }
-                        else {
-                            $error = "There is no translation named '$value'.";
-                        }
-                        break;
-                    case "currentTranslationBasedOn":
-                        $metadata_files = $this->get_metadata_files();
-                        if (array_key_exists($value, $metadata_files)) {
-                            $this->setSystemSetting(self::CURRENT_TRANSLATION_BASEDON_SETTING_NAME, $value);
-                        }
-                        else {
-                            $error = "There is no metadata file for '$value'.";
-                        }
-                        break;
-                    default:
-                        $error = "Unknown setting '$setting'.";
-                        break;
-                }
+                $error = $this->update_setting($payload["setting"] ?? "", $payload["value"] ?? null);
                 return [
                     "success" => empty($error),
                     "error" => $error,
                 ];
+                break;
+            case "load-translation-data":
+                // No user? Check password
+                $password = $payload["password"] ?? "";
+                $name = $payload["name"] ?? "";
+                $based_on = $payload["basedOn"] ?? "";
+                if ($user_id == null && $password !== $this->get_password()) {
+                    return [
+                        "success" => false,
+                        "error" => "Invalid password."
+                    ];
+                }
+                if (!$this->validate_translation_metadata($name, $based_on)) {
+                    return [
+                        "success" => false,
+                        "error" => "Cannot translate '$name' based on '$based_on'. Verify that both items, translation and metadata file exist."
+                    ];
+                }
+                $data = $this->get_translation_data($name, $based_on);
+                return [
+                    "success" => true,
+                    "data" => $data
+                ];
+                break;
             default:
                 return [
                     "success" => false,
                     "error" => "Invalid action '$action'."
                 ];
         }
+    }
+
+    private function validate_translation_metadata($name, $based_on) {
+        return 
+            array_key_exists($name, $this->get_translations()) && 
+            array_key_exists($based_on, $this->get_metadata_files()); 
+    }
+
+    private function get_translation_data($name, $based_on) {
+        $translation = $this->get_translation($name);
+        $metadata = $this->get_metadata_file($based_on);
+
+        return [
+            "translation" => $translation,
+            "metadata" => $metadata
+        ];
+    }
+
+    private function update_setting($setting, $value) {
+        $error = "";
+        switch ($setting) {
+            case "debug":
+                $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
+                break;
+            case "inScreenEnabled":
+                $this->setSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME, $value === true);
+                break;
+            case "currentTranslation":
+                $translations = $this->get_translations();
+                if (array_key_exists($value, $translations)) {
+                    $this->setSystemSetting(self::CURRENT_TRANSLATION_SETTING_NAME, $value);
+                }
+                else {
+                    $error = "There is no translation named '$value'.";
+                }
+                break;
+            case "currentTranslationBasedOn":
+                $metadata_files = $this->get_metadata_files();
+                if (array_key_exists($value, $metadata_files)) {
+                    $this->setSystemSetting(self::CURRENT_TRANSLATION_BASEDON_SETTING_NAME, $value);
+                }
+                else {
+                    $error = "There is no metadata file for '$value'.";
+                }
+                break;
+            case "password":
+                $error = $this->set_password($value);
+                break;
+            default:
+                $error = "Unknown setting '$setting'.";
+                break;
+        }
+        return $error;
     }
     
 

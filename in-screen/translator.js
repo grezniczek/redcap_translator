@@ -46,7 +46,7 @@ THIS.init = function(data) {
 var translationInitialized = false;
 var translationInitializing = false;
 
-THIS.translate = function() {
+THIS.translate = function(password = '') {
     if (translationInitializing) {
         warn('Already initializing. Please be patient ...');
     }
@@ -54,7 +54,7 @@ THIS.translate = function() {
         translationInitializing = true;
         if (!translationInitialized) {
             log('Starting translation of \'' + config.name + '\' based on ' + config.basedOn + ' metadata ...');
-            setupTranslation();
+            setupTranslation(password);
         }
         else {
             injectTranslationHooks();
@@ -65,16 +65,16 @@ THIS.translate = function() {
 //#endregion
 
 
-function setupTranslation() {
+function setupTranslation(password = '') {
     // Load data
-    JSMO.ajax('load-translation-data', { name: config.name, basedOn: config.basedOn })
+    JSMO.ajax('load-translation-data', { name: config.name, basedOn: config.basedOn, password: password })
     .then(function(response) {
         if (response.success) {
             showToast('#translator-successToast', 'Translation data has been loaded.');
             log('Translation data has been loaded:', response.data);
             config.metadata = response.data.metadata;
             config.translation = response.data.translation;
-            translationInitialized = true;
+            injectTranslationHooks();
         }
         else {
             showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
@@ -91,7 +91,8 @@ function setupTranslation() {
 
 function injectTranslationHooks() {
     log('Injecting hooks ...');
-
+    
+    translationInitialized = true;
     translationInitializing = false;
 }
 
