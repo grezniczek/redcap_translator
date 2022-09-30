@@ -19,8 +19,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const INSCREEN_ENABLED_SETTING_NAME = "inscreen-enabled";
     public const CURRENT_TRANSLATION_BASEDON_SETTING_NAME = "current-translate-basedon";
     public const DEBUG_SETTING_NAME = "debug-mode";
-    public const INVISIBLE_CHAR_1 = "‌"; // U+200C Zero-width non-joiner
-    public const INVISIBLE_CHAR_2 = "‍"; // U+200D Zero-width joiner
+    public const CODE_START_ENCODING = "​"; // U+200B Zero-width space
+    public const CODE_ZERO_ENCODING = "‌"; // U+200C Zero-width non-joiner
+    public const CODE_ONE_ENCODING = "‍"; // U+200D Zero-width joiner
     public const IN_SCREEN_VERSION_INI_KEY = "redcap_translation_assistant_version";
     public const IN_SCREEN_KEYS_INI_KEY = "redcap_translation_assistant_keys";
 
@@ -192,7 +193,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     private function get_translation_data($name, $based_on) {
         $translation = $this->get_translation($name);
         $metadata = $this->get_metadata_file($based_on);
-
+        // TODO: Any filtering / removing of unneeded stuff?
         return [
             "translation" => $translation,
             "metadata" => $metadata
@@ -282,6 +283,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             "jsmoName" => $this->getJavascriptModuleObjectName(),
             "name" => $current_translation["name"],
             "basedOn" => $current_translation["based-on"],
+            "codeStart" => self::CODE_START_ENCODING,
+            "code0" => self::CODE_ZERO_ENCODING,
+            "code1" => self::CODE_ONE_ENCODING,
         );
         $json = json_encode($settings, JSON_FORCE_OBJECT);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
@@ -703,8 +707,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     public function encode_invisible($idx) {
         $binary = substr("0000000000000000".decbin($idx), -16);
-        $invisible = str_replace(["0","1"], [self::INVISIBLE_CHAR_1,self::INVISIBLE_CHAR_2], $binary);
-        return $invisible;
+        $code = str_replace(["0","1"], [self::CODE_ZERO_ENCODING,self::CODE_ONE_ENCODING], $binary);
+        return self::CODE_START_ENCODING . $code;
     }
 
 
