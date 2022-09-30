@@ -103,18 +103,65 @@ function setupTranslation(password = '') {
 
 function injectTranslationHooks() {
     log('Injecting hooks ...');
-    const $bodyElements = $('body *');
-    const nBody = $bodyElements.length;
-    const $headElements = $('head *');
-    const nHead = $headElements.length;
-    log ('Body: ' + nBody + ' elements, Head: ' + nHead + ' elements.');
 
-    $('*').each(function() {
+    const $childLess = $('*:not(:has(*))').not('script');
+    const nTotal = $('*').not('script').length;
+    log ('Processing ' + nTotal + ' elements (' + $childLess.length + ' leaves).');
 
-    })
+    // Cycle through all elements
+    /**
+     * @type HTMLElement[]
+     */
+    const elements = [];
 
+    $childLess.each(function() {
+        const $this = $(this);
+        const content = getTextAndAttributes(this);
+        if (content.includes(config.codeStart)) {
+            elements.push(this);
+        }
+        else {
+            let $parent = $this.parent();
+            while (!($parent.is('body') || $parent.is('html'))) {
+                const text = $parent.contents().filter(function() {
+                    return this.nodeType == Node.TEXT_NODE;
+                }).text();
+                if (text.includes(config.codeStart)) {
+                    const el = $parent.get(0);
+                    if (el != null) elements.push(el);
+                    break;
+                }
+                $parent = $parent.parent();
+            }
+        }
+    });
+    for (const el of elements) {
+
+        // Look through all text nodes and attributes
+        // Wrap accordingly or add class
+        $(el).attr('data-inscreen-translator-status', '1');
+
+        // TODO inject
+        // console.log($el, $el.text())
+    }
 
     updateProgressModal('Translation setup has completed.');
+}
+
+/**
+ * 
+ * @param {HTMLElement} el 
+ * @returns 
+ */
+function getTextAndAttributes(el) {
+    const parts = [];
+    const text = el.textContent;
+    if (text != null) parts.push(text);
+    for (const attr of el.attributes) {
+        const attrText = attr.textContent;
+        if (attrText != null) parts.push(attrText);
+    }
+    return parts.join(' ');
 }
 
 //#endregion
