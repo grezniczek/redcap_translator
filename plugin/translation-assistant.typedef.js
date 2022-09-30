@@ -3,7 +3,7 @@
 /**
  * @typedef REDCapTranslator
  * @type {{
- *  init?: function(Object):void
+ *  init: function(Object):void
  * }}
  */
 

@@ -20,10 +20,9 @@ if (typeof window['REDCap']['EM'] == 'undefined') {
 if (typeof window['REDCap']['EM']['RUB'] == 'undefined') {
     window['REDCap']['EM']['RUB'] = {};
 }
-
-/** @type REDCapTranslator */
-var THIS = {};
-window['REDCap']['EM']['RUB']['REDCapTranslator'] = THIS;
+window['REDCap']['EM']['RUB']['REDCapTranslator'] = {
+    init: init
+};
 
 /** @type REDCapTranslator_Config */
 var config;
@@ -35,7 +34,7 @@ var JSMO;
  * Initializes the REDCap Translator plugin page
  * @param {REDCapTranslator_Config} data 
  */
-THIS.init = function(data) {
+function init(data) {
     config = data;
     JSMO = resolveJSMO(config.jsmoName);
 
@@ -69,8 +68,6 @@ THIS.init = function(data) {
         activateTab('translate');
     });
 };
-
-var currentTab = '';
 
 //#endregion
 
@@ -1005,7 +1002,6 @@ function handleActions(event) {
  * @param {string} tab The name of the tab to navigate to
  */
 function activateTab(tab) {
-    currentTab = tab;
     log('Activating tab: ' + tab);
     $('a[data-nav-target]').parent().removeClass('active')
     $('a[data-nav-target="' + tab + '"]').parent().addClass('active')
