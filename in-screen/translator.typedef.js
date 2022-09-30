@@ -1,8 +1,8 @@
 /**
  * @typedef REDCapInScreenTranslator
  * @type {{
- *  init?: function(Object):void
- *  translate?: function():void
+ *  init: function(Object):void
+ *  translate: function():void
  * }}
  */
 
@@ -13,6 +13,9 @@
  *  jsmoName: string
  *  name: string
  *  basedOn: string
+ *  codeStart: string
+ *  code0: string
+ *  code1: string
  *  metadata: Object
  *  translation: Object
  * }}

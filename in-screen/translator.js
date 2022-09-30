@@ -3,7 +3,7 @@
 
 //#region Variables and Initialization
 
-const APP_NAME = 'REDCap InScreen Translator';
+const APP_NAME = 'InScreenTranslator';
 
 if (typeof window['REDCap'] == 'undefined') {
     window['REDCap'] = {
@@ -18,10 +18,10 @@ if (typeof window['REDCap']['EM'] == 'undefined') {
 if (typeof window['REDCap']['EM']['RUB'] == 'undefined') {
     window['REDCap']['EM']['RUB'] = {};
 }
-
-/** @type REDCapInScreenTranslator */
-var THIS = {};
-window['REDCap']['EM']['RUB']['REDCapInScreenTranslator'] = THIS;
+window['REDCap']['EM']['RUB']['REDCapInScreenTranslator'] = {
+    init: init,
+    translate: translate
+};
 
 /** @type REDCapInScreenTranslator_Config */
 var config;
@@ -29,24 +29,26 @@ var config;
 /** @type JavascriptModuleObject */
 var JSMO;
 
+var translationInitialized = false;
+var translationInitializing = false;
+
 /**
  * Initializes the REDCap Translator plugin page
  * @param {REDCapInScreenTranslator_Config} data 
  */
-THIS.init = function(data) {
+function init(data) {
     config = data;
     JSMO = resolveJSMO(config.jsmoName);
 
     $(function() {
         log('Initialized.', config);
 
+        // TODO: Remove - DEBUG only
+        translate();
     });
-};
+}
 
-var translationInitialized = false;
-var translationInitializing = false;
-
-THIS.translate = function(password = '') {
+function translate(password = '') {
     if (translationInitializing) {
         warn('Already initializing. Please be patient ...');
     }
@@ -64,37 +66,84 @@ THIS.translate = function(password = '') {
 
 //#endregion
 
+//#region Setup
 
 function setupTranslation(password = '') {
+    setProgressModalProgress(0);
+    showProgressModal('Loading translation data ...');
+    let errorMsg = '';
     // Load data
     JSMO.ajax('load-translation-data', { name: config.name, basedOn: config.basedOn, password: password })
     .then(function(response) {
         if (response.success) {
-            showToast('#translator-successToast', 'Translation data has been loaded.');
-            log('Translation data has been loaded:', response.data);
             config.metadata = response.data.metadata;
             config.translation = response.data.translation;
+            updateProgressModal('Preparing page for translation ...', 5);
             injectTranslationHooks();
+            translationInitialized = true;
         }
         else {
-            showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
-            error('Failed to load translation data:', response.error);
-            translationInitializing = false;
+            errorMsg = response.error;
         }
     })
     .catch(function(err) {
-        showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
-        error('Failed to load translation data:', err);
+        errorMsg = err;
+    })
+    .finally(function() {
+        if (errorMsg != '') {
+            showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
+            error('Failed to load translation data:', errorMsg);
+        }
         translationInitializing = false;
+        setTimeout(() => {
+            hideProgressModal();
+        }, 200);
     });
 }
 
 function injectTranslationHooks() {
     log('Injecting hooks ...');
-    
-    translationInitialized = true;
-    translationInitializing = false;
+    const $bodyElements = $('body *');
+    const nBody = $bodyElements.length;
+    const $headElements = $('head *');
+    const nHead = $headElements.length;
+    log ('Body: ' + nBody + ' elements, Head: ' + nHead + ' elements.');
+
+    $('*').each(function() {
+
+    })
+
+
+    updateProgressModal('Translation setup has completed.');
 }
+
+//#endregion
+
+
+
+
+//#region Progress Modal
+
+function showProgressModal(text) {
+    updateProgressModal(text, 0);
+    log('Progress modal shown:', text);
+}
+
+function hideProgressModal() {
+    log('Progress modal hidden.')
+}
+
+function updateProgressModal(text, percentage) {
+    // Update text
+    setProgressModalProgress(percentage);
+    log('Progress update:', text, percentage);
+}
+
+function setProgressModalProgress(percentage) {
+    // Update progress bar
+}
+
+//#endregion
 
 //#region Helpers
 
