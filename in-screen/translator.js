@@ -139,28 +139,48 @@ function injectTranslationHooks() {
     for (const el of elements) {
         i++;
         // Already processed? Skip
-        if (el.getAttribute('data-inscreen-translated') == '1') continue;
+        if (el.getAttribute('data-inscreen-translation') == '1') continue;
         // Replace all strings that are in text content in the html content
         let html = el.innerHTML;
         let text = el.innerText;
+        // log($(el), text); // Debug logging
         let pos = text.indexOf(config.codeStart);
         while (pos > -1) {
-            const code = text.substring(pos, 16);
-            
+            const code = text.substring(pos + 1, 16);
+            const decoded = decodeInvisiCode(code);
+            // log(code, decoded, config.keys[decoded.int]); // Debug logging
+
+
+            // Replace
+
+
+
+
             pos = text.indexOf(config.codeStart, pos + 1);
         }
-
-
         // Look through all text nodes and attributes
 
         // Wrap accordingly or add class
-        $(el).attr('data-inscreen-translator-status', '1');
+        $(el).attr('data-inscreen-translation', '1');
 
         // TODO inject
-        // console.log($el, $el.text())
     }
 
     updateProgressModal('Translation setup has completed.');
+}
+
+/**
+ * Decodes an invisible code
+ * @param {string} encoded 
+ * @returns {Object}
+ */
+function decodeInvisiCode(encoded) {
+    // Convert to binary
+    const binary = encoded.split('').map(char => char == config.code0 ? '0' : '1').join('');
+    return {
+        binary: binary,
+        int: Number.parseInt(binary, 2)
+    };
 }
 
 /**

@@ -21,3 +21,27 @@
  *  keys: Object
  * }}
  */
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * @typedef JavascriptModuleObject
+ * @type {{
+ *  afterRender: function(function)
+ *  ajax: function(string, any):Promise<any>
+ *  getUrlParameter: function(string):string
+ *  getUrlParameters: function():object<string,string>
+ *  log: function(string,object):Number
+ *  tt: function(string, ...values):string
+ *  tt_add: function(string, any):void
+ * }}
+ */

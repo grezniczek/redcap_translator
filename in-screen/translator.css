@@ -1,0 +1,7 @@
+/* REDCap Translation Assistant - In-screen Translation Styles */
+
+[data-inscreen-translation]:hover {
+    outline: 1px red solid;
+    outline-offset: 1px;
+    background-color: yellow;
+}
