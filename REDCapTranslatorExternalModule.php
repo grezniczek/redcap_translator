@@ -22,6 +22,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const CODE_START_ENCODING = "‌"; // U+200C Zero-width non-joiner; something that does not screw up spacing (as e.g., zero-width space)
     public const CODE_ZERO_ENCODING = "​"; // U+200B Zero-width space
     public const CODE_ONE_ENCODING = "‍"; // U+200D Zero-width joiner
+    public const STRING_TERMINATOR = "​"; // U+200B Zero-width space
     public const IN_SCREEN_VERSION_INI_KEY = "redcap_translation_assistant_version";
     public const IN_SCREEN_KEYS_INI_KEY = "redcap_translation_assistant_keys";
 
@@ -304,6 +305,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             "codeStart" => self::CODE_START_ENCODING,
             "code0" => self::CODE_ZERO_ENCODING,
             "code1" => self::CODE_ONE_ENCODING,
+            "stringTerminator" => self::STRING_TERMINATOR,
         );
         $json = json_encode($settings, JSON_FORCE_OBJECT);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";

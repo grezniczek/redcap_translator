@@ -128,7 +128,7 @@ class Downloader {
                         }
                     }
                 }
-                $result[$key] = self::$m->encode_invisible($idx) . $text;
+                $result[$key] = self::$m->encode_invisible($idx) . $text . REDCapTranslatorExternalModule::STRING_TERMINATOR;
                 $idx++;
             }
             $result[REDCapTranslatorExternalModule::IN_SCREEN_VERSION_INI_KEY] = $based_on;
