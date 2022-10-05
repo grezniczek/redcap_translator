@@ -174,9 +174,10 @@ class REDCapTranslatorFileUploader {
         }
         // Does it have the required keys?
         $name = $json["name"] ?? "";
+        // TODO
         // Extract strings and annotations for separate storage
         $strings = $json["strings"] ?? null;
-        $annotations = $json["annotations"] ?? [];
+        $help_content = $json["help-content"] ?? [];
         $error = self::$m->validateCreateNewLang($json);
         if (!empty($error)) {
             return [
@@ -185,7 +186,7 @@ class REDCapTranslatorFileUploader {
             ];
         }
         $json["filename"] = $file["name"];
-        self::$m->store_translation($json, $strings, $annotations);
+        self::$m->store_translation($json, $strings, $help_content);
         $json["success"] = true;
         return $json;
     }

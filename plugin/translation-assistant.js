@@ -203,6 +203,7 @@ function handleTranslationsAction(action, name, basedOn) {
         }
         break;
         case 'translation-get-ini':
+        case 'translation-get-help':
         case 'translation-get-json':
         case 'translation-get-in-screen-ini': {
             const url = new URL(config.downloadUrl);
@@ -979,6 +980,7 @@ function handleActions(event) {
         case 'create-new-translation':
         case 'translation-delete':
         case 'translation-get-json':
+        case 'translation-get-help':
         case 'translation-get-ini':
         case 'translation-get-in-screen-ini': 
         {

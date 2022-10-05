@@ -14,7 +14,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const METADATAFILE_STORAGE_SETTING_PREFIX = "metadata-file-";
     public const TRANSLATIONS_SETTING_NAME = "translations";
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
-    public const TRANSLATIONS_SETTING_ANNOTATION_PREFIX = "annotation-";
+    public const TRANSLATIONS_SETTING_HELP_PREFIX = "help-";
     public const CURRENT_TRANSLATION_SETTING_NAME = "current-translate";
     public const INSCREEN_ENABLED_SETTING_NAME = "inscreen-enabled";
     public const CURRENT_TRANSLATION_BASEDON_SETTING_NAME = "current-translate-basedon";
@@ -86,7 +86,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
                 if (array_key_exists($name, $store)) {
                     $this->setSystemSetting(self::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, null);
-                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name, null);
+                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_HELP_PREFIX.$name, null);
                     unset($store[$name]);
                     $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
                     $this->log("Deleted language '{$name}'.");
@@ -313,7 +313,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $this->ih->css("in-screen/translator.css", true);
     }
 
-    public function store_translation($info, $strings, $annotations) {
+    public function store_translation($info, $strings, $help_content) {
         // Purge all parts that should not be stored
         $translation = $this->sanitize_translation($info);
         // Store the file, in parts
@@ -327,7 +327,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $stored[$translation["name"]] = $translation;
         $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
         $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$translation["name"], $strings);
-        $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$translation["name"], $annotations);
+        $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_HELP_PREFIX.$translation["name"], $help_content);
         $this->log("$verb translation file '{$translation["name"]}' ({$translation["filename"]}).");
     }
 
@@ -352,8 +352,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $translation = $this->sanitize_translation($stored[$name]);
         $strings = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name) ?? null;
         $translation["strings"] = empty($strings) ? new \stdClass : $strings;
-        $annotations = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_ANNOTATION_PREFIX.$name) ?? null;
-        $translation["annotations"] = empty($annotations) ? new \stdClass : $annotations;
+        $help_content = $this->getSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_HELP_PREFIX.$name) ?? null;
+        $translation["help-content"] = empty($help_content) ? new \stdClass : $help_content;
         return $translation;
     }
 

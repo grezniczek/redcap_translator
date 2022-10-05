@@ -230,6 +230,7 @@ REDCapTranslatorPlugin::init($module);
                         <button data-action="translation-get-in-screen-ini" class="btn btn-light btn-sm" title="Download an INI file for in-screen translation based on this translation"><i class="fas fa-desktop"></i></button>
                         |
                         <button data-action="translation-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this translation"><i class="fas fa-file-alt text-info"></i></button>
+                        <button data-action="translation-get-help" class="btn btn-light btn-sm" title="Download a help content file"><i class="fas fa-question-circle"></i></button>
                         <button data-action="translation-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this translation"><i class="fas fa-file-code"></i></button>
                         |
                         <button data-action="translation-delete" class="btn btn-light btn-sm" title="Delete this translation from the server"><i class="far fa-trash-alt text-danger"></i></button>
