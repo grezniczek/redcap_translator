@@ -7,7 +7,8 @@ require_once "classes/InjectionHelper.php";
  */
 class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalModule {
 
-    // Constants
+    #region Constants
+
     public const PACKAGES_SETTING_NAME = "packages";
     public const PASSWORD_SETTING_NAME = "no-auth-password";
     public const METADATAFILES_SETTING_NAME = "metadata-files";
@@ -26,6 +27,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const IN_SCREEN_VERSION_INI_KEY = "redcap_translation_assistant_version";
     public const IN_SCREEN_KEYS_INI_KEY = "redcap_translation_assistant_keys";
 
+    #endregion
+
+    #region Constructor and Instance Variables
+
     /**
      * @var InjectionHelper
      */
@@ -35,6 +40,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         parent::__construct();
         $this->ih = InjectionHelper::init($this);
     }
+
+    #endregion
+
+    #region Hooks
 
     function redcap_module_link_check_display($project_id, $link) {
         if ($link["tt_name"] == "module_link_plugin") {
@@ -202,9 +211,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         }
     }
 
-    private function check_inscreen_ini_present() {
-        return isset($GLOBALS["lang"][self::IN_SCREEN_VERSION_INI_KEY]);
-    }
+    #endregion
+
+    #region Translations
 
     private function validate_translation_metadata($name, $based_on) {
         return 
@@ -222,102 +231,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             "metadata" => $metadata,
             "keys" => $keys,
         ];
-    }
-
-    private function update_setting($setting, $value) {
-        $error = "";
-        switch ($setting) {
-            case "debug":
-                $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
-                break;
-            case "inScreenEnabled":
-                $this->setSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME, $value === true);
-                break;
-            case "currentTranslation":
-                $translations = $this->get_translations();
-                if (array_key_exists($value, $translations)) {
-                    $this->setSystemSetting(self::CURRENT_TRANSLATION_SETTING_NAME, $value);
-                }
-                else {
-                    $error = "There is no translation named '$value'.";
-                }
-                break;
-            case "currentTranslationBasedOn":
-                $metadata_files = $this->get_metadata_files();
-                if (array_key_exists($value, $metadata_files)) {
-                    $this->setSystemSetting(self::CURRENT_TRANSLATION_BASEDON_SETTING_NAME, $value);
-                }
-                else {
-                    $error = "There is no metadata file for '$value'.";
-                }
-                break;
-            case "password":
-                $error = $this->set_password($value);
-                break;
-            default:
-                $error = "Unknown setting '$setting'.";
-                break;
-        }
-        return $error;
-    }
-    
-
-    public function get_password() {
-        $pwd = $this->getSystemSetting(self::PASSWORD_SETTING_NAME) ?? null;
-        if (empty($pwd)) {
-            // Generate a random password
-            $pwd = "random"; // TODO
-            $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $pwd);
-        }
-        return $pwd;
-    }
-
-    public function set_password($new_password) {
-        // Some checks
-        if (mb_strlen($new_password) < 10) {
-            return "The password must consist of at least 10 characters.";
-        }
-        if (!preg_match('/[A-Z]/', $new_password)) {
-            return "The password must include at least one upper case letter (A-Z).";
-        }
-        if (!preg_match('/[a-z]/', $new_password)) {
-            return "The password must include at least one lower case letter (a-z).";
-        }
-        if (!preg_match('/[0-9]/', $new_password)) {
-            return "The password must include at least one digit (0-9).";
-        }
-        $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $new_password);
-        return "";
-    }
-
-    private function inject_in_screen_code($page) {
-        // Skip this module's plugin page
-        if ($page == APP_URL_EXTMOD_RELATIVE."index.php" && $_REQUEST["prefix"] == $this->PREFIX) return;
-        // Do nothing if in-screen translation is disabled
-        if ($this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) !== true) return;
-        // Do nothing if there is no translation INI loaded
-        if (!$this->check_inscreen_ini_present()) return;
-        // Check if translation and metadata are valid
-        $current_translation = $this->get_current_translation();
-        if (empty($current_translation["name"]) || empty($current_translation["based-on"])) return;
-
-        $this->initializeJavascriptModuleObject();
-        $this->ih->js("in-screen/translator.js");
-        // Prepare initialization object
-        $settings = array(
-            "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
-            "jsmoName" => $this->getJavascriptModuleObjectName(),
-            "name" => $current_translation["name"],
-            "basedOn" => $current_translation["based-on"],
-            "codeStart" => self::CODE_START_ENCODING,
-            "code0" => self::CODE_ZERO_ENCODING,
-            "code1" => self::CODE_ONE_ENCODING,
-            "stringTerminator" => self::STRING_TERMINATOR,
-        );
-        $json = json_encode($settings, JSON_FORCE_OBJECT);
-        print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
-        require dirname(__FILE__)."/toasts.php";
-        $this->ih->css("in-screen/translator.css", true);
     }
 
     public function store_translation($info, $strings, $help_content) {
@@ -400,14 +313,60 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $json;
     }
 
-    public function get_state() {
-        $state = $this->getSystemSetting("state") ?? [ 
-            "counter" => 0,
-            "last-updated" => "never"
+    public function get_current_translation() {
+        $translations = $this->get_translations();
+        $metadata_files = $this->get_metadata_files();
+        $current_translation = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_SETTING_NAME) ?? "";
+        if (!array_key_exists($current_translation, $translations)) {
+            $current_translation = count($translations) ? array_key_first($translations) : "";
+        }
+        $current_translation_based_on = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_BASEDON_SETTING_NAME) ?? "";
+        if (!array_key_exists($current_translation_based_on, $metadata_files)) {
+            $current_translation_based_on = count($metadata_files) ? array_key_first($metadata_files) : "";
+        }
+        return [ 
+            "name" => $current_translation, 
+            "based-on" => $current_translation_based_on 
         ];
-        return $state;
     }
 
+    #endregion
+
+    #region In-Screen Setup
+
+    private function inject_in_screen_code($page) {
+        // Skip this module's plugin page
+        if ($page == APP_URL_EXTMOD_RELATIVE."index.php" && $_REQUEST["prefix"] == $this->PREFIX) return;
+        // Do nothing if in-screen translation is disabled
+        if ($this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) !== true) return;
+        // Do nothing if there is no translation INI loaded
+        if (!$this->check_inscreen_ini_present()) return;
+        // Check if translation and metadata are valid
+        $current_translation = $this->get_current_translation();
+        if (empty($current_translation["name"]) || empty($current_translation["based-on"])) return;
+
+        $this->initializeJavascriptModuleObject();
+        $this->ih->js("in-screen/translator.js");
+        // Prepare initialization object
+        $settings = array(
+            "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
+            "jsmoName" => $this->getJavascriptModuleObjectName(),
+            "name" => $current_translation["name"],
+            "basedOn" => $current_translation["based-on"],
+            "codeStart" => self::CODE_START_ENCODING,
+            "code0" => self::CODE_ZERO_ENCODING,
+            "code1" => self::CODE_ONE_ENCODING,
+            "stringTerminator" => self::STRING_TERMINATOR,
+        );
+        $json = json_encode($settings, JSON_FORCE_OBJECT);
+        print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
+        require dirname(__FILE__)."/toasts.php";
+        $this->ih->css("in-screen/translator.css", true);
+    }
+
+    #endregion
+
+    #region Packages (REDCap ZIP Files)
 
     public function get_strings_from_zip($doc_id, $version) {
         // Copy archive to local temp
@@ -426,27 +385,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $result;
     }
 
-    public function get_strings_from_current() {
-        $rc_strings = parse_ini_file(APP_PATH_DOCROOT . "LanguageUpdater/English.ini");
-        $em_strings = parse_ini_file(APP_PATH_EXTMOD."classes/English.ini");
-        $result = array_merge($rc_strings, $em_strings);
-        return $result;
-    }
-
-    public function strings_to_ini($strings, $header = "") {
-        $lines = empty($header) ? [] : ["$header"];
-        foreach ($strings as $key => $text) {
-            $lines[] = $key . ' = "' . $this->convert_ini_whitespace($text) . '"';
-        }
-        return join("\n", $lines);
-    }
-
-    private function convert_ini_whitespace($string) {
-        return str_replace(
-            array( '"' , "\r\n", "\r", "\n", "\t", "  ", "  ", "  ", "  ", "  ", "  " ), 
-            array( '\"', ' '   , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' '  ), 
-            $string);
-    }
 
     private function read_ini($zip, $path) {
         $contents = "";
@@ -459,35 +397,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
 
-    /**
-     * Generates a hash value of a string that is compatible with MLM
-     * @param string $text 
-     * @return string 
-     */
-    public function get_hash($text) {
-        return substr(sha1($text), 0, 6);
-    }
+    #endregion
 
-    /**
-     * Gets the 'generator' content for metadata files
-     * @return array 
-     */
-    private function get_generator() {
-        return [
-            "name" => "REDCap Translation Assistant",
-            "version" => $this->VERSION,
-            "author" => "Dr. Günther Rezniczek",
-            "url" => "https://github.com/grezniczek/redcap_translator",
-        ];
-    }
-
-    /**
-     * Gets the current time formatted as YYYY-MM-DD HH:MM:SS
-     * @return string
-     */
-    public function get_current_timestamp() {
-        return date("Y-m-d H:i:s");
-    }
+    #region Metadata Files
 
     public function validate_and_sanitize_metadata(&$meta) {
         // TODO
@@ -655,35 +567,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $json["stats"]["n-brute"] = $n_brute_forced;
     }
 
-    private function contains_html($s) {
-        return strcmp($s, strip_tags($s)) != 0;
-    }
-
-    private function num_interpolations($s) {
-        $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
-        if ($n === false) $n = 0;
-        return $n;
-    }
-
-
-    public function get_current_translation() {
-        $translations = $this->get_translations();
-        $metadata_files = $this->get_metadata_files();
-        $current_translation = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_SETTING_NAME) ?? "";
-        if (!array_key_exists($current_translation, $translations)) {
-            $current_translation = count($translations) ? array_key_first($translations) : "";
-        }
-        $current_translation_based_on = $this->getSystemSetting(REDCapTranslatorExternalModule::CURRENT_TRANSLATION_BASEDON_SETTING_NAME) ?? "";
-        if (!array_key_exists($current_translation_based_on, $metadata_files)) {
-            $current_translation_based_on = count($metadata_files) ? array_key_first($metadata_files) : "";
-        }
-        return [ 
-            "name" => $current_translation, 
-            "based-on" => $current_translation_based_on 
-        ];
-    }
-
-
     public function get_metadata_files() {
         $stored = $this->getSystemSetting(self::METADATAFILES_SETTING_NAME) ?? [];
         return $stored;
@@ -732,10 +615,84 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $this->setSystemSetting(self::METADATAFILE_STORAGE_SETTING_PREFIX.$version, null);
     }
 
-    public function encode_invisible($idx) {
-        $binary = substr("0000000000000000".decbin($idx), -16);
-        $code = str_replace(["0","1"], [self::CODE_ZERO_ENCODING,self::CODE_ONE_ENCODING], $binary);
-        return self::CODE_START_ENCODING . $code;
+    #endregion
+
+    #region Settings
+
+    private function update_setting($setting, $value) {
+        $error = "";
+        switch ($setting) {
+            case "debug":
+                $this->setSystemSetting(self::DEBUG_SETTING_NAME, $value === true);
+                break;
+            case "inScreenEnabled":
+                $this->setSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME, $value === true);
+                break;
+            case "currentTranslation":
+                $translations = $this->get_translations();
+                if (array_key_exists($value, $translations)) {
+                    $this->setSystemSetting(self::CURRENT_TRANSLATION_SETTING_NAME, $value);
+                }
+                else {
+                    $error = "There is no translation named '$value'.";
+                }
+                break;
+            case "currentTranslationBasedOn":
+                $metadata_files = $this->get_metadata_files();
+                if (array_key_exists($value, $metadata_files)) {
+                    $this->setSystemSetting(self::CURRENT_TRANSLATION_BASEDON_SETTING_NAME, $value);
+                }
+                else {
+                    $error = "There is no metadata file for '$value'.";
+                }
+                break;
+            case "password":
+                $error = $this->set_password($value);
+                break;
+            default:
+                $error = "Unknown setting '$setting'.";
+                break;
+        }
+        return $error;
+    }
+
+    public function get_password() {
+        $pwd = $this->getSystemSetting(self::PASSWORD_SETTING_NAME) ?? null;
+        if (empty($pwd)) {
+            // Generate a random password
+            $pwd = "random"; // TODO
+            $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $pwd);
+        }
+        return $pwd;
+    }
+
+    public function set_password($new_password) {
+        // Some checks
+        if (mb_strlen($new_password) < 10) {
+            return "The password must consist of at least 10 characters.";
+        }
+        if (!preg_match('/[A-Z]/', $new_password)) {
+            return "The password must include at least one upper case letter (A-Z).";
+        }
+        if (!preg_match('/[a-z]/', $new_password)) {
+            return "The password must include at least one lower case letter (a-z).";
+        }
+        if (!preg_match('/[0-9]/', $new_password)) {
+            return "The password must include at least one digit (0-9).";
+        }
+        $this->setSystemSetting(self::PASSWORD_SETTING_NAME, $new_password);
+        return "";
+    }
+
+    #endregion
+
+
+    public function get_state() {
+        $state = $this->getSystemSetting("state") ?? [ 
+            "counter" => 0,
+            "last-updated" => "never"
+        ];
+        return $state;
     }
 
 
@@ -748,6 +705,82 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $state["counter"]++;
         $state["last-updated"] = $this->get_current_timestamp();
         $this->setSystemSetting("state", $state);
+    }
+
+    #endregion
+
+    #region Helpers
+
+    private function check_inscreen_ini_present() {
+        return isset($GLOBALS["lang"][self::IN_SCREEN_VERSION_INI_KEY]);
+    }
+
+    public function get_strings_from_current() {
+        $rc_strings = parse_ini_file(APP_PATH_DOCROOT . "LanguageUpdater/English.ini");
+        $em_strings = parse_ini_file(APP_PATH_EXTMOD."classes/English.ini");
+        $result = array_merge($rc_strings, $em_strings);
+        return $result;
+    }
+
+    public function strings_to_ini($strings, $header = "") {
+        $lines = empty($header) ? [] : ["$header"];
+        foreach ($strings as $key => $text) {
+            $lines[] = $key . ' = "' . $this->convert_ini_whitespace($text) . '"';
+        }
+        return join("\n", $lines);
+    }
+
+    private function convert_ini_whitespace($string) {
+        return str_replace(
+            array( '"' , "\r\n", "\r", "\n", "\t", "  ", "  ", "  ", "  ", "  ", "  " ), 
+            array( '\"', ' '   , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' ' , ' '  ), 
+            $string);
+    }
+
+    /**
+     * Generates a hash value of a string that is compatible with MLM
+     * @param string $text 
+     * @return string 
+     */
+    public function get_hash($text) {
+        return substr(sha1($text), 0, 6);
+    }
+
+    /**
+     * Gets the 'generator' content for metadata files
+     * @return array 
+     */
+    private function get_generator() {
+        return [
+            "name" => "REDCap Translation Assistant",
+            "version" => $this->VERSION,
+            "author" => "Dr. Günther Rezniczek",
+            "url" => "https://github.com/grezniczek/redcap_translator",
+        ];
+    }
+
+    /**
+     * Gets the current time formatted as YYYY-MM-DD HH:MM:SS
+     * @return string
+     */
+    public function get_current_timestamp() {
+        return date("Y-m-d H:i:s");
+    }
+
+    private function contains_html($s) {
+        return strcmp($s, strip_tags($s)) != 0;
+    }
+
+    private function num_interpolations($s) {
+        $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
+        if ($n === false) $n = 0;
+        return $n;
+    }
+
+    public function encode_invisible($idx) {
+        $binary = substr("0000000000000000".decbin($idx), -16);
+        $code = str_replace(["0","1"], [self::CODE_ZERO_ENCODING,self::CODE_ONE_ENCODING], $binary);
+        return self::CODE_START_ENCODING . $code;
     }
 
     #endregion
