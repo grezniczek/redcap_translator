@@ -41,8 +41,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             return $link;
         }
         if ($link["tt_name"] == "module_link_translate") {
-            // TODO - suppress on plugin page
-            return $this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) === true ? $link : null;
+            $enabled = $this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) === true;
+            $enabled = $enabled && $this->check_inscreen_ini_present();
+            return $enabled ? $link : null;
         }
         return $link;
     }
@@ -201,6 +202,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         }
     }
 
+    private function check_inscreen_ini_present() {
+        return isset($GLOBALS["lang"][self::IN_SCREEN_VERSION_INI_KEY]);
+    }
+
     private function validate_translation_metadata($name, $based_on) {
         return 
             array_key_exists($name, $this->get_translations()) && 
@@ -290,6 +295,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         if ($page == APP_URL_EXTMOD_RELATIVE."index.php" && $_REQUEST["prefix"] == $this->PREFIX) return;
         // Do nothing if in-screen translation is disabled
         if ($this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) !== true) return;
+        // Do nothing if there is no translation INI loaded
+        if (!$this->check_inscreen_ini_present()) return;
         // Check if translation and metadata are valid
         $current_translation = $this->get_current_translation();
         if (empty($current_translation["name"]) || empty($current_translation["based-on"])) return;
