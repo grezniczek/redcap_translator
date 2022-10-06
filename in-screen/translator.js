@@ -60,6 +60,7 @@ function translate(password = '') {
         }
         else {
             injectTranslationHooks();
+            translationInitializing = false;
         }
     }
 }
@@ -79,10 +80,10 @@ function setupTranslation(password = '') {
             config.metadata = response.data.metadata;
             config.translation = response.data.translation;
             config.keys = response.data.keys; 
+            log('Translation, metadata, and keys loaded.', config);
             updateProgressModal('Preparing page for translation ...', 5);
             injectTranslationHooks();
             translationInitialized = true;
-            log('Translation, metadata, and keys loaded.', config);
         }
         else {
             errorMsg = response.error;
@@ -99,6 +100,7 @@ function setupTranslation(password = '') {
         translationInitializing = false;
         setTimeout(() => {
             hideProgressModal();
+            log('Initialization complete.');
         }, 200);
     });
 }
@@ -167,6 +169,31 @@ function injectTranslationHooks() {
     }
 
     updateProgressModal('Translation setup has completed.');
+    showInScreenTranslator();
+}
+
+function showInScreenTranslator() {
+    // @ts-ignore - jQuery UI
+    $('#in-screen-translation-editor').dialog({ 
+        bgiframe: true, 
+        modal: false, 
+        width: "50%",
+        height: "auto",
+        minHeight: 300,
+        minWidth: 400,
+        position: {
+            my: "right bottom",
+            at: "right-10 bottom-10",
+            of: window
+        },
+        closeOnEscape: true,
+        close: closeInScreenTranslator
+    });
+    log('In-Screen Translator dialog shown.');
+}
+
+function closeInScreenTranslator(e) {
+    log('In-Screen Translator dialog hidden.')
 }
 
 /**

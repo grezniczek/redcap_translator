@@ -361,6 +361,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $json = json_encode($settings, JSON_FORCE_OBJECT);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
         require dirname(__FILE__)."/toasts.php";
+        require dirname(__FILE__)."/floating.php";
         $this->ih->css("in-screen/translator.css", true);
     }
 
