@@ -17,6 +17,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     public const TRANSLATIONS_SETTING_STRINGS_PREFIX = "strings-";
     public const TRANSLATIONS_SETTING_HELP_PREFIX = "help-";
     public const CURRENT_TRANSLATION_SETTING_NAME = "current-translate";
+    public const DIALOG_COORDINATES_SETTING_NAME = "dialog-coords";
     public const INSCREEN_ENABLED_SETTING_NAME = "inscreen-enabled";
     public const CURRENT_TRANSLATION_BASEDON_SETTING_NAME = "current-translate-basedon";
     public const DEBUG_SETTING_NAME = "debug-mode";
@@ -203,6 +204,12 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                     "data" => $data
                 ];
                 break;
+            case 'set-dialog-coordinates':
+                $this->set_dialog_coordinates($payload);
+                return [
+                    "success" => true
+                ];
+                break;
             default:
                 return [
                     "success" => false,
@@ -357,12 +364,29 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             "code0" => self::CODE_ZERO_ENCODING,
             "code1" => self::CODE_ONE_ENCODING,
             "stringTerminator" => self::STRING_TERMINATOR,
+            "dialogPosition" => $this->get_dialog_coordinates(),
         );
         $json = json_encode($settings, JSON_FORCE_OBJECT);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
         require dirname(__FILE__)."/toasts.php";
         require dirname(__FILE__)."/floating.php";
         $this->ih->css("in-screen/translator.css", true);
+    }
+
+    private function get_dialog_coordinates() {
+        $coords = $this->getSystemSetting(self::DIALOG_COORDINATES_SETTING_NAME) ?? [
+            "left" => 0,
+            "top" => 0,
+            "width" => 0,
+            "height" => 0,
+            "positionUpdated" => false,
+            "sizeUpdated" => false
+        ];
+        return $coords;
+    }
+
+    private function set_dialog_coordinates($coords) {
+        $this->setSystemSetting(self::DIALOG_COORDINATES_SETTING_NAME, $coords);
     }
 
     #endregion

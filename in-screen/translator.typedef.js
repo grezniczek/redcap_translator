@@ -19,8 +19,22 @@
  *  metadata: Object
  *  translation: Object
  *  keys: Object
+ *  dialogPosition: DialogPosition
  * }}
  */
+
+/**
+ * @typedef DialogPosition
+ * @type {{
+ *  sizeUpdated: boolean
+ *  positionUpdated: boolean
+ *  left: Number
+ *  top: Number
+ *  width: Number
+ *  height: Number
+ * }}
+ */
+
 
 
 

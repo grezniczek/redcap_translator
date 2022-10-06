@@ -56,11 +56,13 @@
         "package-delete",
         "settings-update",
         "load-translation-data",
-        "update-translation"
+        "update-translation",
+        "set-dialog-coordinates"
     ],
     "no-auth-ajax-actions": [
         "load-translation-data",
-        "update-translation"
+        "update-translation",
+        "set-dialog-coordinates"
     ],
     "crons": [
         {

@@ -32,6 +32,8 @@ var JSMO;
 var translationInitialized = false;
 var translationInitializing = false;
 
+var $dialog = null;
+
 /**
  * Initializes the REDCap Translator plugin page
  * @param {REDCapInScreenTranslator_Config} data 
@@ -42,6 +44,8 @@ function init(data) {
 
     $(function() {
         log('Initialized.', config);
+
+        $dialog = $('#in-screen-translation-editor');
 
         // TODO: Remove - DEBUG only
         translate();
@@ -173,27 +177,57 @@ function injectTranslationHooks() {
 }
 
 function showInScreenTranslator() {
+    const position = config.dialogPosition.positionUpdated ? [config.dialogPosition.left, config.dialogPosition.top ] : {
+        my: "right bottom",
+        at: "right-10 bottom-10",
+        of: window
+    };
     // @ts-ignore - jQuery UI
-    $('#in-screen-translation-editor').dialog({ 
+    const settings = { 
         bgiframe: true, 
         modal: false, 
-        width: "50%",
-        height: "auto",
+        width: config.dialogPosition.sizeUpdated ? config.dialogPosition.width : '50%',
+        height: config.dialogPosition.sizeUpdated ? config.dialogPosition.height : 'auto',
         minHeight: 300,
         minWidth: 400,
-        position: {
-            my: "right bottom",
-            at: "right-10 bottom-10",
-            of: window
-        },
+        position: position,
         closeOnEscape: true,
-        close: closeInScreenTranslator
-    });
-    log('In-Screen Translator dialog shown.');
+        close: closeInScreenTranslator,
+        dragStop: saveInScreenTranslatorCoords,
+        resizeStop: saveInScreenTranslatorCoords,
+    }
+    $dialog.dialog(settings);
+    log('In-Screen Translator dialog shown.', settings);
+    if (translationInitializing) {
+        $dialog.dialog('option', 'resize');
+    }
 }
 
-function closeInScreenTranslator(e) {
+function closeInScreenTranslator(event, ui) {
     log('In-Screen Translator dialog hidden.')
+}
+
+function saveInScreenTranslatorCoords(event, ui) {
+    if (ui['position']) {
+        config.dialogPosition.left = ui.position.left;
+        config.dialogPosition.top = ui.position.top;
+        config.dialogPosition.positionUpdated = true;
+    }
+    if (ui['size']) {
+        config.dialogPosition.width = ui.size.width;
+        config.dialogPosition.height = ui.size.height;
+        config.dialogPosition.sizeUpdated = true;
+    }
+    JSMO.ajax('set-dialog-coordinates', config.dialogPosition)
+    .then(function(response) {
+        if (response.success) {
+            log ('In-Screen Translatior dialog move/resized:', config.dialogPosition);
+        }
+    })
+    .catch(function(err) {
+        showToast('#translator-errorToast', 'Failed to store dialog coordinates. See console for details.');
+        error('Failed to store dialog coordinates:', err);
+    });
 }
 
 /**
