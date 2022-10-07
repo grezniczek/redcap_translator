@@ -42,17 +42,21 @@ function init(data) {
     config = data;
     JSMO = resolveJSMO(config.jsmoName);
 
-
-    $(document).on("dialogopen", ".ui-dialog", function (event, ui) {
-        if ($dialog) {
-            $dialog.dialog('moveToTop');
-        }
-    });
-
     $(function() {
         log('Initialized.', config);
 
         $dialog = $('#in-screen-translation-editor');
+        // This keeps the dialog on top of other dialogs
+        $(document).on("dialogopen", ".ui-dialog", function (event, ui) {
+            if (event.target.dataset['translationWidget'] != 'in-screen-editor') {
+                warn('New dialog detected:', event.target)
+                $dialog.dialog('moveToTop');
+            }
+        });
+
+        // Actions
+        $dialog.find('[data-action]').on('click', handleAction);
+
 
         // TODO: Remove - DEBUG only
         translate();
@@ -277,7 +281,35 @@ function getTextAndAttributes(el) {
 
 //#endregion
 
+//#region Actions
 
+/**
+ * Handles actions (mouse clicks on links, buttons)
+ * @param {JQuery.TriggeredEvent} event 
+ */
+function handleAction(event) {
+    let $source = $(event.target)
+    let action = $source.attr('data-action')
+    if (!action) {
+        $source = $source.parents('[data-action]')
+        action = $source.attr('data-action')
+    }
+    if (!action || $source.prop('disabled')) return
+    switch (action) {
+        case 'refresh-translation': 
+        {
+            injectTranslationHooks();
+        }
+        break;
+        default: 
+        {
+            log('Unknown action:', action);
+        }
+        break;
+    }
+}
+
+//#endregion
 
 
 //#region Progress Modal

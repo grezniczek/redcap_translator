@@ -6,10 +6,12 @@
     background-color: yellow;
 }
 
-.in-screen-minimized {
-    position: fixed;
-    bottom: 20px;
-    right: 30px;
-    z-index: 1000;
-    padding: 10px;
+
+/* Translator Dialog */
+
+[data-translation-widget="in-screen-editor"] {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    padding: 10px !important;
 }
