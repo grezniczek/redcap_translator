@@ -42,6 +42,13 @@ function init(data) {
     config = data;
     JSMO = resolveJSMO(config.jsmoName);
 
+
+    $(document).on("dialogopen", ".ui-dialog", function (event, ui) {
+        if ($dialog) {
+            $dialog.dialog('moveToTop');
+        }
+    });
+
     $(function() {
         log('Initialized.', config);
 
@@ -177,35 +184,38 @@ function injectTranslationHooks() {
 }
 
 function showInScreenTranslator() {
-    const position = config.dialogPosition.positionUpdated ? [config.dialogPosition.left, config.dialogPosition.top ] : {
-        my: "right bottom",
-        at: "right-10 bottom-10",
-        of: window
-    };
-    // @ts-ignore - jQuery UI
-    const settings = { 
-        //bgiframe: true, 
-        // autoOpen: false,
-        closeText: 'Close',
-        draggable: true,
-        resizable: true,
-        modal: false, 
-        width: config.dialogPosition.sizeUpdated ? config.dialogPosition.width : '50%',
-        height: config.dialogPosition.sizeUpdated ? config.dialogPosition.height : 'auto',
-        minHeight: 300,
-        minWidth: 400,
-        position: position,
-        closeOnEscape: true,
-        close: handleInScreenTranslatorClosed,
-        dragStop: saveInScreenTranslatorCoords,
-        resizeStop: saveInScreenTranslatorCoords,
+    if (!translationInitialized) {
+        const position = config.dialogPosition.positionUpdated ? [config.dialogPosition.left, config.dialogPosition.top ] : {
+            my: "right bottom",
+            at: "right-10 bottom-10",
+            of: window
+        };
+        const settings = { 
+            closeText: 'Close',
+            title: 'In-Screen Translator',
+            draggable: true,
+            resizable: true,
+            modal: false, 
+            width: config.dialogPosition.sizeUpdated ? config.dialogPosition.width : '50%',
+            height: config.dialogPosition.sizeUpdated ? config.dialogPosition.height : 'auto',
+            minHeight: 300,
+            minWidth: 400,
+            position: position,
+            closeOnEscape: true,
+            close: handleInScreenTranslatorClosed,
+            dragStop: saveInScreenTranslatorCoords,
+            resizeStop: saveInScreenTranslatorCoords,
+        }
+        $dialog.dialog(settings);
+        if (config.dialogPosition.positionUpdated) {
+            // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
+            $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
+        }
     }
-    $dialog.dialog(settings);
-    if (config.dialogPosition.positionUpdated) {
-        // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
-        $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
+    else {
+        $dialog.dialog('open');
     }
-    log('In-Screen Translator dialog shown.', settings);
+    log('In-Screen Translator dialog shown.', $dialog.dialog('option'));
 }
 
 function handleInScreenTranslatorClosed(event, ui) {
