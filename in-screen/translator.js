@@ -184,7 +184,11 @@ function showInScreenTranslator() {
     };
     // @ts-ignore - jQuery UI
     const settings = { 
-        bgiframe: true, 
+        //bgiframe: true, 
+        // autoOpen: false,
+        closeText: 'Close',
+        draggable: true,
+        resizable: true,
         modal: false, 
         width: config.dialogPosition.sizeUpdated ? config.dialogPosition.width : '50%',
         height: config.dialogPosition.sizeUpdated ? config.dialogPosition.height : 'auto',
@@ -192,18 +196,19 @@ function showInScreenTranslator() {
         minWidth: 400,
         position: position,
         closeOnEscape: true,
-        close: closeInScreenTranslator,
+        close: handleInScreenTranslatorClosed,
         dragStop: saveInScreenTranslatorCoords,
         resizeStop: saveInScreenTranslatorCoords,
     }
     $dialog.dialog(settings);
-    log('In-Screen Translator dialog shown.', settings);
-    if (translationInitializing) {
-        $dialog.dialog('option', 'resize');
+    if (config.dialogPosition.positionUpdated) {
+        // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
+        $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
     }
+    log('In-Screen Translator dialog shown.', settings);
 }
 
-function closeInScreenTranslator(event, ui) {
+function handleInScreenTranslatorClosed(event, ui) {
     log('In-Screen Translator dialog hidden.')
 }
 
