@@ -219,6 +219,7 @@ function showInScreenTranslator() {
     else {
         $dialog.dialog('open');
     }
+    $dialog[0].scrollIntoView(false);
     log('In-Screen Translator dialog shown.', $dialog.dialog('option'));
 }
 
