@@ -51,7 +51,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             return $link;
         }
         if ($link["tt_name"] == "module_link_translate") {
-            $enabled = $this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) === true;
+            $enabled = strpos($_SERVER['HTTP_REFERER'], "prefix={$this->PREFIX}") === false;
+            $enabled = $enabled && $this->getSystemSetting(self::INSCREEN_ENABLED_SETTING_NAME) === true;
             $enabled = $enabled && $this->check_inscreen_ini_present();
             return $enabled ? $link : null;
         }
