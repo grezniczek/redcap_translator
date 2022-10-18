@@ -14,11 +14,12 @@
  *  name: string
  *  basedOn: string
  *  codeStart: string
+ *  stringTerminator: string
  *  code0: string
  *  code1: string
  *  metadata: Object
  *  translation: Object
- *  keys: Object
+ *  keys: string[]
  *  dialogPosition: DialogPosition
  * }}
  */
@@ -32,6 +33,14 @@
  *  top: Number
  *  width: Number
  *  height: Number
+ * }}
+ */
+
+/**
+ * @typedef InvisiCode
+ * @type {{
+ *  binary: string
+ *  int: Number
  * }}
  */
 
