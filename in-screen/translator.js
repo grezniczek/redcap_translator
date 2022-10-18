@@ -215,6 +215,8 @@ function showInScreenTranslator() {
             // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
             $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
         }
+        // Capture keyboard (T = translate, M = metadata)
+        $('body').on('keypress', keyPressed);
     }
     else {
         $dialog.dialog('open');
@@ -282,6 +284,20 @@ function getTextAndAttributes(el) {
 
 //#endregion
 
+//#region Translation
+
+/**
+ * 
+ * @param {string[]} items 
+ * @param {boolean} showMeta
+ */
+function translateItems(items, showMeta = false) {
+    log('Translating items' + (showMeta ? ' (metadata)' : '') + ':', items);
+    // TODO
+}
+
+//#endregion
+
 //#region Actions
 
 /**
@@ -312,6 +328,24 @@ function handleAction(event) {
 
 //#endregion
 
+//#region Keyboard
+/**
+ * 
+ * @param {JQuery.KeyPressEvent} event 
+ */
+function keyPressed(event) {
+    if (!'tm'.split('').includes(event.key)) return; // Ignore all except T and M
+    const $target = $(event.target);
+    if ($target.is('input:focus, textarea:focus')) return; // Ignore when an input/textarea has focus
+
+    const $hover = $('[data-inscreen-translation]:hover');
+    if ($hover.length > 0) {
+        const items = ($hover.attr('data-inscreen-translation') ?? '').split(',');
+        translateItems(items, event.key == 'm');
+    }
+}
+
+//#endregion
 
 //#region Progress Modal
 
