@@ -24,8 +24,8 @@ class REDCapTranslatorPlugin {
         $settings = array(
             "debug" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
             "jsmoName" => self::$m->getJavascriptModuleObjectName(),
-            "uploadUrl" => self::$m->getUrl("plugin/upload.php"),
-            "downloadUrl" => self::$m->getUrl("plugin/download.php"),
+            "uploadUrl" => trim(APP_PATH_WEBROOT_FULL, "/") . urldecode(self::$m->getUrl("plugin/upload.php")),
+            "downloadUrl" =>trim(APP_PATH_WEBROOT_FULL, "/") . urldecode(self::$m->getUrl("plugin/download.php")),
             "csrfToken" => self::$m->getCSRFToken(),
             "password" => self::$m->get_password(),
             "state" => self::$m->get_state(),
