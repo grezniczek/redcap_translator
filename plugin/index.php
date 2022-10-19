@@ -24,8 +24,8 @@ class REDCapTranslatorPlugin {
         $settings = array(
             "debug" => self::$m->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
             "jsmoName" => self::$m->getJavascriptModuleObjectName(),
-            "uploadUrl" => trim(APP_PATH_WEBROOT_FULL, "/") . urldecode(self::$m->getUrl("plugin/upload.php")),
-            "downloadUrl" =>trim(APP_PATH_WEBROOT_FULL, "/") . urldecode(self::$m->getUrl("plugin/download.php")),
+            "uploadUrl" => urldecode(self::$m->getUrl("plugin/upload.php")),
+            "downloadUrl" => urldecode(self::$m->getUrl("plugin/download.php")),
             "csrfToken" => self::$m->getCSRFToken(),
             "password" => self::$m->get_password(),
             "state" => self::$m->get_state(),
@@ -115,7 +115,9 @@ REDCapTranslatorPlugin::init($module);
                     <select data-type="setting" data-setting="currentTranslation" id="current-translation-file" class="form-control mr-2"></select>
                     <label class="mr-2 ml-2" for="current-translation-based-on">based on </label>
                     <select data-type="setting" data-setting="currentTranslationBasedOn" id="current-translation-based-on" class="form-control mr-2"></select>
-                    <label class="ml-2">metadata.</label>
+                    <label class="ml-2">metadata</label>
+                    <label class="ml-2">&mdash;</label>
+                    <button data-action="translate-get-in-screen-ini" class="btn btn-primary btn-xs ml-2"><i class="fas fa-download"></i> Download in-screen INI</button>
                 </div>
             </p>
             <p>
@@ -125,7 +127,7 @@ REDCapTranslatorPlugin::init($module);
                 </div>
             </p>
             <p class="small">
-                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On non-authenticated pages or survey pages, manually call <i>REDCap.EM.RUB.REDCapInScreenTranslator.translate(<b>***</b>)</i> with your password from the console (F12).
+                <b>Note:</b> After enabling in-screen translation, the page must be reloaded for this setting to take effect. Furthermore, a matching in-screen INI file must be set as the language (system-wide and in at least one project). In-screen translation cannot be used on the <i>REDCap Translation Assistant</i> plugin page (i.e. the page you are currently viewing). Use the <b style="white-space:nowrap;"><i class="fas fa-exchange-alt"></i> Translate</b> link to translate a page. On non-authenticated pages or survey pages, manually call <i>REDCap.EM.RUB.REDCapInScreenTranslator.translate(<b>***</b>)</i> with your password from the console (F12).
             </p>
             <p class="red">
                 TODO: Provide a button to load translation data to edit translation/metadata here on this page by selecting a language string (search box) and providing a UI to edit the string and set metadata. Provide some filters such as "not translated", metadata states, etc...
@@ -227,8 +229,6 @@ REDCapTranslatorPlugin::init($module);
                         </div>
                     </td>
                     <td>
-                        <button data-action="translation-get-in-screen-ini" class="btn btn-light btn-sm" title="Download an INI file for in-screen translation based on this translation"><i class="fas fa-desktop"></i></button>
-                        |
                         <button data-action="translation-get-ini" class="btn btn-light btn-sm" title="Download the INI file for this translation"><i class="fas fa-file-alt text-info"></i></button>
                         <button data-action="translation-get-help" class="btn btn-light btn-sm" title="Download a help content file"><i class="fas fa-question-circle"></i></button>
                         <button data-action="translation-get-json" class="btn btn-light btn-sm" title="Download the JSON file for this translation"><i class="fas fa-file-code"></i></button>

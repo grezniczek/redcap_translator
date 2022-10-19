@@ -92,6 +92,30 @@ function updateTranslateTab() {
     );
 }
 
+/**
+ * Handles actions on the Translate tab
+ * @param {string} action 
+ * @param {string} name 
+ * @param {string} basedOn
+ */
+function handleTranslateAction(action, name, basedOn) {
+    log('Translate action:', action, name);
+    switch(action) {
+        case 'translate-get-in-screen-ini': {
+            const url = new URL(config.downloadUrl);
+            url.searchParams.append('mode', action);
+            url.searchParams.append('name', name);
+            url.searchParams.append('based-on', basedOn);
+            log('Requesting download from:', url);
+            showToast('#translator-successToast', 'Initiated download of language \'' + name + '\' file. The download should start momentarily.');
+            setTimeout(() => {
+                // @ts-ignore
+                window.location = url;
+            }, 400);
+        }
+        break;
+    }
+}
 
 //#endregion
 
@@ -151,7 +175,7 @@ function validateCreateNewForm(e) {
  * @param {string} basedOn
  */
 function handleTranslationsAction(action, name, basedOn) {
-    log('Language action:', action, name);
+    log('Translation action:', action, name);
     switch(action) {
         case 'create-new-translation': {
             const data = validateCreateNewForm();
@@ -204,8 +228,7 @@ function handleTranslationsAction(action, name, basedOn) {
         break;
         case 'translation-get-ini':
         case 'translation-get-help':
-        case 'translation-get-json':
-        case 'translation-get-in-screen-ini': {
+        case 'translation-get-json': {
             const url = new URL(config.downloadUrl);
             url.searchParams.append('mode', action);
             url.searchParams.append('name', name);
@@ -982,11 +1005,17 @@ function handleActions(event) {
         case 'translation-get-json':
         case 'translation-get-help':
         case 'translation-get-ini':
-        case 'translation-get-in-screen-ini': 
         {
             const name = ($source.attr('data-name') ?? '').toString();
             const basedOn = ($('[data-em-para="translation-based-on"]').val() ?? '').toString();
             handleTranslationsAction(action, name, basedOn);
+        }
+        break;
+        case 'translate-get-in-screen-ini': 
+        {
+            const name = ($source.attr('data-name') ?? '').toString();
+            const basedOn = ($('[data-setting="currentTranslationBasedOn"]').val() ?? '').toString();
+            handleTranslateAction(action, name, basedOn);
         }
         break;
         // ???
