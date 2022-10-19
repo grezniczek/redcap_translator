@@ -34,6 +34,8 @@ var translationInitializing = false;
 
 var $dialog = null;
 
+var stringsInsideScript = {};
+
 /**
  * Initializes the REDCap Translator plugin page
  * @param {REDCapInScreenTranslator_Config} data 
@@ -130,12 +132,53 @@ function processElement(el, counter) {
     counter++;
 
     // Is there work to do? At least one code starter must be present
-    if (!el.innerHTML.includes(config.codeStart)) return counter;
+    if (!getTextAndAttributes(el).includes(config.codeStart)) return counter;
 
     log('Processing element:', $(el));
 
-    // Inspect and process all child nodes
-    if (el.hasChildNodes()) {
+    const isScript = el.nodeName == 'SCRIPT';
+    const isOption = el.nodeName == 'OPTION';
+
+    // Is this a script tag?
+    if (isScript && el.textContent?.includes(config.codeStart)) {
+        const text = el.textContent ?? '';
+        let start = 0;
+        start = text.indexOf(config.codeStart, start);
+        while (start > -1) {
+            const code = text.substring(start + 1, start + 17);
+            const decoded = decodeInvisiCode(code);
+            const key = config.keys[decoded.int];
+            const end = text.indexOf(config.stringTerminator, start + 17);
+            stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
+            start = text.indexOf(config.codeStart, end);
+        }
+    }
+
+    if (isOption && el.textContent?.includes(config.codeStart)) {
+        const keys = {};
+        let text = el.textContent ?? '';
+        let start = 0;
+        start = text.indexOf(config.codeStart, start);
+        while (start > -1) {
+            const code = text.substring(start + 1, start + 17);
+            const decoded = decodeInvisiCode(code);
+            const key = config.keys[decoded.int];
+            const end = text.indexOf(config.stringTerminator, start + 17);
+            keys[key] = true;
+            start = text.indexOf(config.codeStart, end);
+            text = text.replace(config.codeStart + code, '').replace(config.stringTerminator, '');
+            start = text.indexOf(config.codeStart, start);
+        }
+        el.textContent = text;
+        const $select = $(el).parents('select');
+        const attrVal = $select.attr('data-inscreen-translation') ?? '{"":{}}';
+        const attrObj = JSON.parse(attrVal);
+        Object.keys(attrObj['']).map(key => keys[key] = true);
+        $select.attr('data-inscreen-translation', JSON.stringify({'':keys}));
+    }
+
+    // Inspect and process all child nodes (not for SCRIPT tags)
+    if (!isScript && el.hasChildNodes()) {
         /** @type {HTMLElement|null} */
         let currentWrapper = null;
         const childNodes = []
@@ -144,20 +187,20 @@ function processElement(el, counter) {
             if (child.nodeType == Node.TEXT_NODE && child.textContent?.includes(config.codeStart)) {
                 log('Processing text child:', $(child), $(el));
                 const text = child.textContent;
-                log('Text:', text)
-                // Text node
                 // This could be a language string or have additional content or be only a partial language string or 
                 // even be multiple language strings
                 let start = 0;
                 start = text.indexOf(config.codeStart, start);
-                const code = text.substring(start + 1, 17);
+                const code = text.substring(start + 1, start + 17);
                 const decoded = decodeInvisiCode(code);
                 const key = config.keys[decoded.int];
                 // log ('Code / Decoded / Key:', code, decoded, key);
                 const end = text.indexOf(config.stringTerminator, start + 17);
                 // Prepend wrapper
                 const span = document.createElement('span');
-                span.setAttribute('data-inscreen-translation', key);
+                const spanAttr = {'':{}};
+                spanAttr[''][key] = true;
+                span.setAttribute('data-inscreen-translation', JSON.stringify(spanAttr));
                 el.insertBefore(span, child);
                 if (end < 0) {
                     // There is no end, thus append complete text node and set currentWrapper
@@ -167,7 +210,8 @@ function processElement(el, counter) {
                 }
                 else {
                     // Add without code and reprocess
-                    const partial = document.createTextNode(text.substring(start + 17, end));
+                    const space = (start == 1 && text.substring(0, 1) == ' ') ? ' ' : '';
+                    const partial = document.createTextNode(space + text.substring(start + 17, end));
                     span.append(partial);
                     child.textContent = text.substring(end + 1);
                     return processElement(el, counter -1);
@@ -206,12 +250,33 @@ function processElement(el, counter) {
             }
         }
     }
+
     // Inspect all attributes
     if (el.hasAttributes()) {
+        const attrKeys = {};
         for (const attr of el.attributes) {
-            if (attr.textContent?.includes(config.codeStart)) {
+            let text = attr.textContent ?? '';
+            if (text.includes(config.codeStart)) {
                 log('Processing attribute:', attr.name, $(el));
+                // Find all keys and remove codes
+                let start = 0;
+                start = text.indexOf(config.codeStart, start);
+                while (start > -1) {
+                    const code = text.substring(start + 1, start + 17);
+                    const decoded = decodeInvisiCode(code);
+                    const key = config.keys[decoded.int];
+                    const end = text.indexOf(config.stringTerminator, start + 17);
+                    attrKeys[attr.name] = attrKeys[attr.name] ?? {};
+                    attrKeys[attr.name][key] = true;
+                    text = text.replace(config.codeStart + code, '').replace(config.stringTerminator, '');
+                    start = text.indexOf(config.codeStart, start);
+                }
+                attr.textContent = text;
             }
+        }
+        // Add keys to element
+        if (Object.keys(attrKeys).length) {
+            el.setAttribute('data-inscreen-translation', JSON.stringify(attrKeys));
         }
     }
 
@@ -222,85 +287,97 @@ function injectTranslationHooks() {
     log('Injecting hooks ...');
 
     const nTotal = $('body *').length;
-    log ('Processing ' + nTotal + ' elements ...');
+    log('Processing ' + nTotal + ' elements ...');
     let i = 0; // Keep track of progress
     const nProcessed = processElement(document.body, i);
-    log ('Elements processed: ' + nProcessed);
-
-
-    // // Compile a list of all candidate HTML elements
-    // /**
-    //  * @type HTMLElement[]
-    //  */
-    // const elements = [];
-    // $childLess.each(function() {
-    //     const $this = $(this);
-    //     const content = getTextAndAttributes(this);
-    //     if (content.includes(config.codeStart)) {
-    //         elements.push(this);
-    //     }
-    //     else {
-    //         let $parent = $this.parent();
-    //         while (!($parent.is('body') || $parent.is('html'))) {
-    //             const text = $parent.contents().filter(function() {
-    //                 return this.nodeType == Node.TEXT_NODE || this.nodeType == Node.ATTRIBUTE_NODE;
-    //             }).text();
-    //             if (text.includes(config.codeStart)) {
-    //                 const el = $parent.get(0);
-    //                 if (el != null) elements.push(el);
-    //             }
-    //             $parent = $parent.parent();
-    //         }
-    //     }
-    // });
-        
-
-
-        // // Replace all strings that are in text content in the html content
-        // let html = el.innerHTML;
-        // let text = el.innerText;
-        // // log($(el), text); // Debug logging
-        // let start = html.indexOf(config.codeStart);
-        // const keys = {};
-        // while (start > -1) {
-        //     const code = html.substring(start + 1, 16);
-        //     const decoded = decodeInvisiCode(code);
-        //     const key = config.keys[decoded.int];
-        //     keys[key] = true;
-        //     const end = html.indexOf(config.stringTerminator, start + 17);
-        //     log(start, end, code, decoded, key, $(el)); // Debug logging
-
-
-        //     // Replace
+    log('Elements processed: ' + nProcessed);
+    log('Script strings:', stringsInsideScript);
 
 
 
-
-        //     start = html.indexOf(config.codeStart, end);
-        // }
-        // // Look through all text nodes and attributes
-
-        // // Wrap accordingly or add class
-        // $(el).attr('data-inscreen-translation', Object.keys(keys).join(','));
-
-        // TODO inject
-    // }
 
     updateProgressModal('Translation setup has completed.');
     showInScreenTranslator();
 }
 
-/**
- * 
- * @param {any} textNode 
- */
-function wrapTextNode(textNode) {
-    const spanNode = document.createElement('span');
-    const newTextNode = document.createTextNode(textNode.textContent);
-    spanNode.appendChild(newTextNode);
-    textNode.parentNode.replaceChild(spanNode, textNode);
-    return spanNode;
+
+function highlightTranslationStatus(state) {
+    $('[data-inscreen-translation]').each(function() {
+        const $this = $(this);
+        if (state) {
+            const keys = getTranslationKeys($this);
+            const state = {
+                outdated: false,
+                translate: false,
+                translated: false,
+                'do-not-translate': false
+            };
+            for (const key of keys) {
+                const meta = config.metadata.strings[key];
+                const translation = config.translation.strings[key];
+                try {
+                    if (translation["do-not-translate"] == true) {
+                        state['do-not-translate'] = true;
+                    }
+                    else if (translation.translations.hasOwnProperty(meta.hash)) {
+                        state['translated'] = true;
+                    }
+                    else if ((translation.translations[''] ?? '').length) {
+                        state['outdated'] = true;
+                    }
+                    else {
+                        state['translate'] = true;
+                    }
+                }
+                catch (ex) {
+                    debugger
+                }
+            }
+            $this.attr('data-inscreen-status', getTranslationStatus(state));
+        }
+        else {
+            $this.removeAttr('data-inscreen-status');
+        }
+    });
 }
+
+function getTranslationStatus(state) {
+    for(const key of ['translate', 'outdate', 'do-not-translate', 'translated']) {
+        if (state[key] == true) return key;
+    }
+    return 'translate';
+}
+
+function getTranslationKeys($el) {
+    const raw = $el.attr('data-inscreen-translation');
+    const keyObj = JSON.parse(raw);
+    const keys = {};
+    // Extract keys
+    for (const name in keyObj) {
+        for (const key of Object.keys(keyObj[name])) {
+            keys[key] = true;
+        }
+    }
+    return Object.keys(keys);
+}
+
+/**
+ * Handles actions (mouse clicks on links, buttons)
+ * @param {JQuery.ChangeEvent} event 
+ */
+function updateToggles(event) {
+    const $toggle = $(event.target);
+    const name = $toggle.attr('data-inscreen-toggle') ?? '';
+    const state = $toggle.prop('checked');
+    log('Handling toggle:', name, state);
+    switch (name) {
+        case 'highlight-translation-status': {
+            highlightTranslationStatus(state);
+        }
+        break;
+    }
+}
+
 
 function showInScreenTranslator() {
     if (!translationInitialized) {
@@ -332,6 +409,8 @@ function showInScreenTranslator() {
         }
         // Capture keyboard (T = translate, M = metadata)
         $('body').on('keypress', keyPressed);
+        // Capture toggles
+        $('[data-inscreen-toggle]').on('change', updateToggles);
     }
     else {
         $dialog.dialog('open');

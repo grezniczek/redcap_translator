@@ -1,10 +1,29 @@
 /* REDCap Translation Assistant - In-screen Translation Styles */
 
-[data-inscreen-translation]:hover {
-    outline: 1px red solid;
+[data-inscreen-translation] {
+    outline: 1px transparent solid;
     outline-offset: 1px;
-    background-color: yellow;
 }
+[data-inscreen-translation]:hover {
+    background-color: yellow;
+    outline-width: 2px;
+}
+[data-inscreen-translation]:hover:not([data-inscreen-status]) {
+    outline-color: red;
+}
+[data-inscreen-status="translate"] {
+    outline-color: red;
+}
+[data-inscreen-status="do-not-translate"] {
+    outline-color: rgb(65, 144, 180);
+}
+[data-inscreen-status="translated"] {
+    outline-color: green;
+}
+[data-inscreen-status="outdated"] {
+    outline-color: orange;
+}
+
 
 
 /* Translator Dialog */
