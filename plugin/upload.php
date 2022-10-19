@@ -85,6 +85,7 @@ class REDCapTranslatorFileUploader {
             if (isset($item["id"]) && !starts_with($item["id"], "_valtype_") && isset($item["translation"])) {
                 $json["strings"][$item["id"]] = [
                     "do-not-translate" => false,
+                    "annotation" => "",
                     "translations" => [
                         ($item["hash"] ?? "") => $item["translation"]
                     ]
@@ -138,15 +139,21 @@ class REDCapTranslatorFileUploader {
         foreach ($ini as $key => $text) {
             $json["strings"][$key] = [
                 "do-not-translate" => null,
+                "annotation" => "",
                 "translations" => [
-                    "" => $text
+                    "" => str_replace([
+                            REDCapTranslatorExternalModule::CODE_START_ENCODING,
+                            REDCapTranslatorExternalModule::CODE_ZERO_ENCODING,
+                            REDCapTranslatorExternalModule::CODE_ONE_ENCODING,
+                            REDCapTranslatorExternalModule::STRING_TERMINATOR
+                        ], "", $text)
                 ]
             ];
         }
         return [
             "success" => true,
             "filename" => "$filename.json",
-            "json" => json_encode($json, JSON_PRETTY_PRINT)
+            "json" => json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         ];
     }
 
