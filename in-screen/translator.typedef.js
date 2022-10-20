@@ -45,6 +45,7 @@
 /**
  * @typedef StringMetadata
  * @type {{
+ *  key: string
  *  text: string
  *  hash: string
  *  annotation: string
@@ -95,6 +96,7 @@
 /**
  * @typedef StringTranslation
  * @type {{
+ *  key: string
  *  'do-not-translate': boolean|null
  *  annotation: string
  *  translations: Object<string,string>

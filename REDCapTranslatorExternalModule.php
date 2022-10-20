@@ -457,6 +457,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             $html = $this->contains_html($text); // TODO - or'ed with prev file - if unknown: null
             $length_restricted = null; // TODO - merge prev, null = unknown, 0 = unrestricted, n = restricted to n
             $entry = [
+                "key" => $key,
                 "text" => $text,
                 "annotation" => $annotation,
                 "hash" => $hash,

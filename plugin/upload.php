@@ -84,6 +84,7 @@ class REDCapTranslatorFileUploader {
         foreach ($mlm["uiTranslations"] as $item) {
             if (isset($item["id"]) && !starts_with($item["id"], "_valtype_") && isset($item["translation"])) {
                 $json["strings"][$item["id"]] = [
+                    "key" => $item["id"],
                     "do-not-translate" => false,
                     "annotation" => "",
                     "translations" => [
@@ -138,6 +139,7 @@ class REDCapTranslatorFileUploader {
         ];
         foreach ($ini as $key => $text) {
             $json["strings"][$key] = [
+                "key" => $key,
                 "do-not-translate" => null,
                 "annotation" => "",
                 "translations" => [
