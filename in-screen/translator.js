@@ -329,8 +329,8 @@ function highlightTranslationStatus(state) {
                         state['translate'] = true;
                     }
                 }
-                catch (ex) {
-                    debugger
+                catch (err) {
+                    error('Exception during determination of translation status:', err)
                 }
             }
             $this.attr('data-inscreen-status', getTranslationStatus(state));
@@ -537,14 +537,20 @@ function handleAction(event) {
  * @param {JQuery.KeyPressEvent} event 
  */
 function keyPressed(event) {
-    if (!'tm'.split('').includes(event.key)) return; // Ignore all except T and M
+    if (!'mtR'.split('').includes(event.key)) return; // Ignore all except m, t, and R
+    log(event);
     const $target = $(event.target);
     if ($target.is('input:focus, textarea:focus')) return; // Ignore when an input/textarea has focus
 
-    const $hover = $('[data-inscreen-translation]:hover');
-    if ($hover.length > 0) {
-        const items = ($hover.attr('data-inscreen-translation') ?? '').split(',');
-        translateItems(items, event.key == 'm');
+    if (event.key == 'R') {
+        injectTranslationHooks();
+    }
+    else {
+        const $hover = $('[data-inscreen-translation]:hover');
+        if ($hover.length > 0) {
+            const items = ($hover.attr('data-inscreen-translation') ?? '').split(',');
+            translateItems(items, event.key == 'm');
+        }
     }
 }
 
