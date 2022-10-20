@@ -32,5 +32,22 @@
     display: flex;
     justify-content: space-between;
     flex-direction: column;
-    padding: 10px !important;
+    padding: 0 !important;
+}
+
+.in-screen-top {
+    padding: 10px;
+    padding-bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+}
+.in-screen-body {
+    padding: 10px;
+    height: 100%;
+}
+.in-screen-footer {
+    padding: 10px;
+    background-color: lightblue;
 }

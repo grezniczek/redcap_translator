@@ -35,6 +35,11 @@ var translationInitializing = false;
 var $dialog = null;
 
 var stringsInsideScript = {};
+var stringsInPage = {};
+
+var selectItems = [];
+var currentString = '';
+var currentFilter = null;
 
 /**
  * Initializes the REDCap Translator plugin page
@@ -122,6 +127,16 @@ function setupTranslation(password = '') {
     });
 }
 
+
+function addPageKey(key) {
+    stringsInPage[key] = (stringsInPage[key] ?? 0) + 1;
+}
+
+function addScriptKey(key) {
+    stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
+    addPageKey(key);
+}
+
 /**
  * 
  * @param {HTMLElement} el 
@@ -149,7 +164,7 @@ function processElement(el, counter) {
             const decoded = decodeInvisiCode(code);
             const key = config.keys[decoded.int];
             const end = text.indexOf(config.stringTerminator, start + 17);
-            stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
+            addScriptKey(key);
             start = text.indexOf(config.codeStart, end);
         }
     }
@@ -165,6 +180,7 @@ function processElement(el, counter) {
             const key = config.keys[decoded.int];
             const end = text.indexOf(config.stringTerminator, start + 17);
             keys[key] = true;
+            addPageKey(key);
             start = text.indexOf(config.codeStart, end);
             text = text.replace(config.codeStart + code, '').replace(config.stringTerminator, '');
             start = text.indexOf(config.codeStart, start);
@@ -194,6 +210,7 @@ function processElement(el, counter) {
                 const code = text.substring(start + 1, start + 17);
                 const decoded = decodeInvisiCode(code);
                 const key = config.keys[decoded.int];
+                addPageKey(key);
                 // log ('Code / Decoded / Key:', code, decoded, key);
                 const end = text.indexOf(config.stringTerminator, start + 17);
                 // Prepend wrapper
@@ -265,6 +282,7 @@ function processElement(el, counter) {
                     const code = text.substring(start + 1, start + 17);
                     const decoded = decodeInvisiCode(code);
                     const key = config.keys[decoded.int];
+                    addPageKey(key);
                     const end = text.indexOf(config.stringTerminator, start + 17);
                     attrKeys[attr.name] = attrKeys[attr.name] ?? {};
                     attrKeys[attr.name][key] = true;
@@ -279,7 +297,6 @@ function processElement(el, counter) {
             el.setAttribute('data-inscreen-translation', JSON.stringify(attrKeys));
         }
     }
-
     return counter;
 }
 
@@ -293,13 +310,79 @@ function injectTranslationHooks() {
     log('Elements processed: ' + nProcessed);
     log('Script strings:', stringsInsideScript);
 
-
+    filterItems();
 
 
     updateProgressModal('Translation setup has completed.');
     showInScreenTranslator();
 }
 
+
+/**
+ * 
+ */
+function initSelect() {
+    const $select = $('[data-translator-item="current-key"]');
+    $select.html('');
+    if (!$select[0].hasAttribute('data-select2-id')) {
+        // @ts-ignore
+        $select.select2({
+            placeholder: 'Select an item',
+            dropdownAutoWidth : true,
+            data: selectItems.map(id => { return { id: id, text: id} })
+        });
+        $select.on('select2:open', function() {
+            $('input[aria-controls="select2-translator-current-key-results"]').get(0)?.focus();
+        });
+    }
+    else {
+        selectItems.map(key => $select.append(new Option(key, key)));
+        $select.val(selectItems.includes(currentString) ? currentString : '').trigger('change');
+    }
+}
+
+function showItemsFilter() {
+    log('Showing the items filter.')
+    // TODO - Show modal
+
+    applyItemsFilter();
+}
+
+function applyItemsFilter() {
+    // TODO - construct filter object
+    currentFilter = {
+        translated: false
+    };
+    filterItems();
+    openSelect();
+}
+
+function openSelect() {
+    // @ts-ignore
+    $('[data-translator-item="current-key"]').select2('open');
+}
+
+function filterItems() {
+    log('Filtering items:', currentFilter);
+    const $clearFilterButton = $('[data-action="clear-filter"]');
+    $clearFilterButton.prop('disabled', currentFilter == null).toggleClass('text-danger', currentFilter != null);
+    selectItems = Object.keys(stringsInPage).filter(key => matchFilter(key)).sort();
+    initSelect();
+}
+
+function clearFilter() {
+    log('Clearing items filter.');
+    currentFilter = null;
+    filterItems();
+    openSelect();
+}
+
+function matchFilter(key) {
+    if (currentFilter === null) return true;
+
+    // TODO apply filter
+    return key.substring(0, 1) == 'b';
+}
 
 function highlightTranslationStatus(state) {
     $('[data-inscreen-translation]').each(function() {
@@ -517,15 +600,17 @@ function handleAction(event) {
     if (!action || $source.prop('disabled')) return
     switch (action) {
         case 'refresh-translation': 
-        {
             injectTranslationHooks();
-        }
-        break;
+            break;
+        case 'filter-items': 
+            showItemsFilter();
+            break;
+        case 'clear-filter': 
+            clearFilter();
+            break;
         default: 
-        {
             log('Unknown action:', action);
-        }
-        break;
+            break;
     }
 }
 
