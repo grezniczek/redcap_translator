@@ -314,7 +314,7 @@ function highlightTranslationStatus(state) {
             };
             for (const key of keys) {
                 const meta = config.metadata.strings[key];
-                const translation = config.translation.strings[key];
+                const translation = config.translation.strings[key] ?? generateEmptyStringTranslation(key);
                 try {
                     if (translation["do-not-translate"] == true) {
                         state['do-not-translate'] = true;
@@ -339,6 +339,15 @@ function highlightTranslationStatus(state) {
             $this.removeAttr('data-inscreen-status');
         }
     });
+}
+
+function generateEmptyStringTranslation(key) {
+    return {
+        key: key,
+        'do-not-translate': null,
+        annotation: '',
+        translations: {}
+    };
 }
 
 function getTranslationStatus(state) {
