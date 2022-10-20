@@ -537,13 +537,15 @@ function handleAction(event) {
  * @param {JQuery.KeyPressEvent} event 
  */
 function keyPressed(event) {
-    if (!'mtR'.split('').includes(event.key)) return; // Ignore all except m, t, and R
-    log(event);
+    if (!'mrtT'.split('').includes(event.key)) return; // Ignore all except m, t, T, and R
     const $target = $(event.target);
     if ($target.is('input:focus, textarea:focus')) return; // Ignore when an input/textarea has focus
 
-    if (event.key == 'R') {
-        injectTranslationHooks();
+    if (event.key == 'r') {
+        translate();
+    }
+    if (event.key == 'T') {
+        translate();
     }
     else {
         const $hover = $('[data-inscreen-translation]:hover');
