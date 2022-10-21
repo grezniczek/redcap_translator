@@ -1,4 +1,3 @@
-
 /**
  * REDCap Translation Assistant - In-screen Translation Magic
  */
@@ -545,8 +544,19 @@ function translateItems(itemsObj, showMeta = false) {
 }
 
 function setCurrentString(key) {
-    log('Setting dialog to translate:', key);
-
+    // Does the string exists?
+    if (!(config.metadata.strings[key] ?? false)) {
+        const msg = 'String \'' + key + '\' does not exist!';
+        warn(msg);
+        return;
+    }
+    // Ensure that the string is in the list of items shown in the string selector
+    if (!selectItems.includes(key)) {
+        selectItems.push(key);
+        selectItems.sort();
+        updateStringSelector();
+    }
+    $stringSelector.val(key).trigger('change');
 }
 
 /**
@@ -565,8 +575,11 @@ function currentItemChanged(event) {
     currentString = ($stringSelector.val() ?? '').toString();
     log('Current item changed:', currentString);
     updateItemHighlight();
+    updateTranslationDialog();
+}
 
-    // TODO show new values
+function updateTranslationDialog() {
+    log('Setting dialog to translate:', currentString);
 }
 
 //#endregion
