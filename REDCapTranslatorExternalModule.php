@@ -714,25 +714,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     #endregion
 
-
-    public function get_state() {
-        $state = $this->getSystemSetting("state") ?? [ 
-            "counter" => 0,
-            "last-updated" => "never"
-        ];
-        return $state;
-    }
-
-
     #region Crons
 
     function code_lens_cron($cron_info) {
         // TODO
-        // This is some dummy action
-        $state = $this->get_state();
-        $state["counter"]++;
-        $state["last-updated"] = $this->get_current_timestamp();
-        $this->setSystemSetting("state", $state);
     }
 
     #endregion
