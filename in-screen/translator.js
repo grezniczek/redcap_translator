@@ -1,3 +1,8 @@
+
+/**
+ * REDCap Translation Assistant - In-screen Translation Magic
+ */
+
 // @ts-check
 ;(function() {
 
