@@ -1,4 +1,6 @@
-/* REDCap Translation Assistant EM */
+/**
+ * REDCap Translation Assistant - Setup Magic
+ */
 
 // @ts-check
 ;(function() {
