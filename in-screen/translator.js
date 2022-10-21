@@ -43,10 +43,10 @@ var $saveButton = $('<button></button>');
 var stringsInsideScript = {};
 var stringsInPage = {};
 
-var selectItems = [];
+var selectItems = [''];
 var currentString = '';
 var currentFilter = null;
-var currentHighlighted = false;
+var currentHighlighted = true;
 
 
 // DEBUG ONLY - TODO: Set to false
@@ -191,7 +191,6 @@ function processElement(el, counter) {
         const attrVal = $select.attr('data-inscreen-translation') ?? '{"":{}}';
         const attrObj = JSON.parse(attrVal);
         Object.keys(attrObj['']).map(key => keys[key] = true);
-keys['alert_24'] = true; // TODO - REMOVE
         $select.attr('data-inscreen-translation', JSON.stringify({'':keys}));
         Object.keys(keys).forEach(key => $select.addClass('in-screen-id-'+ key));
     }
@@ -410,6 +409,7 @@ function showInScreenTranslator() {
 
 function handleInScreenTranslatorClosed(event, ui) {
     log('In-Screen Translator dialog hidden.')
+    setCurrentString('');
 }
 
 function saveInScreenTranslatorCoords(event, ui) {
@@ -515,8 +515,9 @@ function updateItemHighlight() {
  * 
  * @param {string[]} itemsObj 
  * @param {boolean} showMeta
+ * @param {JQuery<HTMLElement>} $target
  */
-function translateItems(itemsObj, showMeta = false) {
+function translateItems(itemsObj, showMeta, $target) {
     log('Translating items' + (showMeta ? ' (metadata)' : '') + ':', itemsObj);
 
     /** @type {Object<string,boolean>} */
@@ -529,7 +530,7 @@ function translateItems(itemsObj, showMeta = false) {
     }
     const itemsList = Object.keys(items);
     if (itemsList.length > 1) {
-        showItemSelectorPopup(items);
+        showItemSelectorPopover(items, $target);
     }
     else if (itemsList.length == 1) {
         setCurrentString(itemsList[0]);
@@ -539,24 +540,66 @@ function translateItems(itemsObj, showMeta = false) {
 /**
  * 
  * @param {Object<string,boolean>} items 
+ * @param {JQuery<HTMLElement>} $target
  */
- function showItemSelectorPopup(items) {
-    log('Showing items selector for:', items);
-    // TODO
+ function showItemSelectorPopover(items, $target) {
+    log('Showing items selector for:', items, $target);
+    // Helper functions
+    // @ts-ignore
+    const close = () => $target.popover('dispose');
+    const goto = (e) => {
+        setCurrentString(e.target.textContent);
+        close();
+    };
+    // Construct body
+    const $body = $('<div></div>');
+    const $ul = $('<ul class="in-screen-items-list"></ul>');
+    const sortedItems = Object.keys(items).sort();
+    for (const key of sortedItems) {
+        const $li = $('<li></li>');
+        const $a = $('<a href="#">' + key + '</a>').on('click', goto);
+        $li.append($a);
+        if (items[key]) {
+            // Add attribute pill
+            const $badge = $('<span class="badge badge-info badge-sm ml-2">Attribute</span>');
+            $li.append($badge);
+        }
+        $ul.append($li);
+    }
+    $body.append($ul);
+    const $filter = $('<button class="btn btn-link btn-xs">Set as filter</button>').on('click', () => {
+        close();
+        currentFilter = {
+            limitTo: Object.keys(items)
+        };
+        filterItems();
+        openStringSelector();
+    });
+    const $cancel = $('<button class="btn btn-link btn-xs">Cancel</button>').on('click', close);
+    $body.append($filter, $cancel);
+    // @ts-ignore
+    $target.popover({
+        title: 'Multiple strings detected!',
+        html: true,
+        content: $body,
+        trigger: 'manual'
+    }).popover('show');
 }
 
 function setCurrentString(key) {
-    // Does the string exists?
-    if (!(config.metadata.strings[key] ?? false)) {
-        const msg = 'String \'' + key + '\' does not exist!';
-        warn(msg);
-        return;
-    }
-    // Ensure that the string is in the list of items shown in the string selector
-    if (!selectItems.includes(key)) {
-        selectItems.push(key);
-        selectItems.sort();
-        updateStringSelector();
+    if (key != '') {
+        // Does the string exists?
+        if (key != '' && !(config.metadata.strings[key] ?? false)) {
+            const msg = 'String \'' + key + '\' does not exist!';
+            warn(msg);
+            return;
+        }
+        // Ensure that the string is in the list of items shown in the string selector
+        if (!selectItems.includes(key)) {
+            selectItems.push(key);
+            selectItems.sort();
+            updateStringSelector();
+        }
     }
     $stringSelector.val(key).trigger('change');
 }
@@ -564,7 +607,7 @@ function setCurrentString(key) {
 /**
  * Opens the string selector
  */
-function openSelect() {
+function openStringSelector() {
     // @ts-ignore
     $stringSelector.select2('open');
 }
@@ -577,7 +620,9 @@ function currentItemChanged(event) {
     currentString = ($stringSelector.val() ?? '').toString();
     log('Current item changed:', currentString);
     updateItemHighlight();
-    updateTranslationDialog();
+    if (currentString != '') {
+        updateTranslationDialog();
+    }
 }
 
 function updateTranslationDialog() {
@@ -601,14 +646,23 @@ function applyItemsFilter() {
         translated: false
     };
     filterItems();
-    openSelect();
+    openStringSelector();
 }
+
 
 function filterItems() {
     log('Filtering items:', currentFilter);
     const $clearFilterButton = $('[data-action="clear-filter"]');
     $clearFilterButton.prop('disabled', currentFilter == null).toggleClass('text-danger', currentFilter != null);
-    selectItems = Object.keys(stringsInPage).filter(key => matchFilter(key)).sort();
+    if (currentFilter?.limitTo ?? false) {
+        selectItems = currentFilter.limitTo.sort();
+    }
+    else if (currentFilter?.all ?? false) {
+        selectItems = Object.keys(config.metadata.strings).filter(key => matchFilter(key)).sort();
+    }
+    else {
+        selectItems = Object.keys(stringsInPage).filter(key => matchFilter(key)).sort();
+    }
     updateStringSelector();
 }
 
@@ -616,7 +670,6 @@ function clearFilter() {
     log('Clearing items filter.');
     currentFilter = null;
     filterItems();
-    openSelect();
 }
 
 function matchFilter(key) {
@@ -681,7 +734,7 @@ function keyPressed(event) {
         const $hover = $('[data-inscreen-translation]:hover');
         if ($hover.length > 0) {
             const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
-            translateItems(items, event.key == 'm');
+            translateItems(items, event.key == 'm', $hover);
         }
     }
 }

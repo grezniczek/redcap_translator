@@ -56,3 +56,9 @@
     background-color: yellow;
     outline: 2px yellow solid;
 }
+
+.in-screen-items-list {
+    list-style: circle;
+    margin: 0;
+    padding-left: 2em;
+}

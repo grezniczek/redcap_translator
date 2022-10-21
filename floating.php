@@ -30,7 +30,7 @@
                 <label class="custom-control-label" style="padding-top: 2px;" for="highlight-translation-status">Show translation status</label>
             </div>
             <div class="custom-control custom-switch ml-2">
-                <input type="checkbox" class="custom-control-input" id="highlight-current" data-inscreen-toggle="highlight-current">
+                <input type="checkbox" class="custom-control-input" id="highlight-current" data-inscreen-toggle="highlight-current" checked>
                 <label class="custom-control-label" style="padding-top: 2px;" for="highlight-current">Highlight selected</label>
             </div>
         </div>
