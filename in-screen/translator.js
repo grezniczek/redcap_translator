@@ -398,6 +398,8 @@ function showInScreenTranslator() {
         $('body').on('keypress', keyPressed);
         // Capture toggles
         $('[data-inscreen-toggle]').on('change', updateToggles);
+        // Visual
+        $dialog.parents('div[role="dialog"]').css('border', '2px #337ab7 solid');
     }
     else {
         $dialog.dialog('open');
