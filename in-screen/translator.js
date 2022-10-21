@@ -33,6 +33,8 @@ var translationInitialized = false;
 var translationInitializing = false;
 
 var $dialog = null;
+var $stringSelector = $('<select></select>');
+var $saveButton = $('<button></button>');
 
 var stringsInsideScript = {};
 var stringsInPage = {};
@@ -40,6 +42,11 @@ var stringsInPage = {};
 var selectItems = [];
 var currentString = '';
 var currentFilter = null;
+var currentHighlighted = false;
+
+
+// DEBUG ONLY - TODO: Set to false
+const autostart = true;
 
 /**
  * Initializes the REDCap Translator plugin page
@@ -60,13 +67,15 @@ function init(data) {
                 $dialog.dialog('moveToTop');
             }
         });
-
         // Actions
         $dialog.find('[data-action]').on('click', handleAction);
-
-
-        // TODO: Remove - DEBUG only
-        translate();
+        // Main elements
+        $stringSelector = $dialog.find('[data-translator-item="current-key"]');
+        $saveButton = $dialog.find('[data-action="save-changes"]');
+        // Autostart
+        if (config.auth && autostart) {
+            translate();
+        }
     });
 }
 
@@ -81,7 +90,7 @@ function translate(password = '') {
             setupTranslation(password);
         }
         else {
-            injectTranslationHooks();
+            preparePageForTranslation();
             translationInitializing = false;
         }
     }
@@ -104,7 +113,7 @@ function setupTranslation(password = '') {
             config.keys = response.data.keys; 
             log('Translation, metadata, and keys loaded.', config);
             updateProgressModal('Preparing page for translation ...', 5);
-            injectTranslationHooks();
+            preparePageForTranslation();
             translationInitialized = true;
         }
         else {
@@ -127,34 +136,21 @@ function setupTranslation(password = '') {
     });
 }
 
-
-function addPageKey(key) {
-    stringsInPage[key] = (stringsInPage[key] ?? 0) + 1;
-}
-
-function addScriptKey(key) {
-    stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
-    addPageKey(key);
-}
-
 /**
- * 
- * @param {HTMLElement} el 
- * @param {Number} counter 
+ * Recursively parses elements, drilling down the element tree
+ * @param {HTMLElement} el Start element
+ * @param {Number} counter A counter that's increased for each parsed element
  * @returns 
  */
 function processElement(el, counter) {
     counter++;
-
     // Is there work to do? At least one code starter must be present
     if (!getTextAndAttributes(el).includes(config.codeStart)) return counter;
-
     log('Processing element:', $(el));
-
     const isScript = el.nodeName == 'SCRIPT';
     const isOption = el.nodeName == 'OPTION';
 
-    // Is this a script tag?
+    //#region SCRIPT tags
     if (isScript && el.textContent?.includes(config.codeStart)) {
         const text = el.textContent ?? '';
         let start = 0;
@@ -168,7 +164,8 @@ function processElement(el, counter) {
             start = text.indexOf(config.codeStart, end);
         }
     }
-
+    //#endregion
+    //#region Elements
     if (isOption && el.textContent?.includes(config.codeStart)) {
         const keys = {};
         let text = el.textContent ?? '';
@@ -190,10 +187,12 @@ function processElement(el, counter) {
         const attrVal = $select.attr('data-inscreen-translation') ?? '{"":{}}';
         const attrObj = JSON.parse(attrVal);
         Object.keys(attrObj['']).map(key => keys[key] = true);
+keys['alert_24'] = true; // TODO - REMOVE
         $select.attr('data-inscreen-translation', JSON.stringify({'':keys}));
+        Object.keys(keys).forEach(key => $select.addClass('in-screen-id-'+ key));
     }
-
-    // Inspect and process all child nodes (not for SCRIPT tags)
+    //#endregion
+    //#region Child nodes (except SCRIPT tags)
     if (!isScript && el.hasChildNodes()) {
         /** @type {HTMLElement|null} */
         let currentWrapper = null;
@@ -218,6 +217,7 @@ function processElement(el, counter) {
                 const spanAttr = {'':{}};
                 spanAttr[''][key] = true;
                 span.setAttribute('data-inscreen-translation', JSON.stringify(spanAttr));
+                span.classList.add('in-screen-id-' + key);
                 el.insertBefore(span, child);
                 if (end < 0) {
                     // There is no end, thus append complete text node and set currentWrapper
@@ -267,8 +267,8 @@ function processElement(el, counter) {
             }
         }
     }
-
-    // Inspect all attributes
+    //#endregion
+    //#region Attributes
     if (el.hasAttributes()) {
         const attrKeys = {};
         for (const attr of el.attributes) {
@@ -286,6 +286,7 @@ function processElement(el, counter) {
                     const end = text.indexOf(config.stringTerminator, start + 17);
                     attrKeys[attr.name] = attrKeys[attr.name] ?? {};
                     attrKeys[attr.name][key] = true;
+                    el.classList.add('in-screen-id-' + key);
                     text = text.replace(config.codeStart + code, '').replace(config.stringTerminator, '');
                     start = text.indexOf(config.codeStart, start);
                 }
@@ -297,12 +298,14 @@ function processElement(el, counter) {
             el.setAttribute('data-inscreen-translation', JSON.stringify(attrKeys));
         }
     }
+    //#endregion
     return counter;
 }
 
-function injectTranslationHooks() {
-    log('Injecting hooks ...');
-
+/**
+ * Looks for language strings in BODY and all nested elements
+ */
+function preparePageForTranslation() {
     const nTotal = $('body *').length;
     log('Processing ' + nTotal + ' elements ...');
     let i = 0; // Keep track of progress
@@ -312,164 +315,52 @@ function injectTranslationHooks() {
 
     filterItems();
 
-
     updateProgressModal('Translation setup has completed.');
     showInScreenTranslator();
 }
 
-
 /**
- * 
+ * Updates (or initialzes) the translation dialog's string selector
  */
-function initSelect() {
-    const $select = $('[data-translator-item="current-key"]');
-    $select.html('');
-    if (!$select[0].hasAttribute('data-select2-id')) {
+function updateStringSelector() {
+    $stringSelector.html('<option value=""></option>');
+    if (!$stringSelector.get(0)?.hasAttribute('data-select2-id') ?? false) {
         // @ts-ignore
-        $select.select2({
+        $stringSelector.select2({
             placeholder: 'Select an item',
             dropdownAutoWidth : true,
             data: selectItems.map(id => { return { id: id, text: id} })
         });
-        $select.on('select2:open', function() {
+        $stringSelector.on('select2:open', function() {
             $('input[aria-controls="select2-translator-current-key-results"]').get(0)?.focus();
         });
+        $stringSelector.on('change', currentItemChanged);
     }
     else {
-        selectItems.map(key => $select.append(new Option(key, key)));
-        $select.val(selectItems.includes(currentString) ? currentString : '').trigger('change');
+        selectItems.map(key => $stringSelector.append(new Option(key, key)));
+        $stringSelector.val(selectItems.includes(currentString) ? currentString : '').trigger('change');
     }
-}
-
-function showItemsFilter() {
-    log('Showing the items filter.')
-    // TODO - Show modal
-
-    applyItemsFilter();
-}
-
-function applyItemsFilter() {
-    // TODO - construct filter object
-    currentFilter = {
-        translated: false
-    };
-    filterItems();
-    openSelect();
-}
-
-function openSelect() {
-    // @ts-ignore
-    $('[data-translator-item="current-key"]').select2('open');
-}
-
-function filterItems() {
-    log('Filtering items:', currentFilter);
-    const $clearFilterButton = $('[data-action="clear-filter"]');
-    $clearFilterButton.prop('disabled', currentFilter == null).toggleClass('text-danger', currentFilter != null);
-    selectItems = Object.keys(stringsInPage).filter(key => matchFilter(key)).sort();
-    initSelect();
-}
-
-function clearFilter() {
-    log('Clearing items filter.');
-    currentFilter = null;
-    filterItems();
-    openSelect();
-}
-
-function matchFilter(key) {
-    if (currentFilter === null) return true;
-
-    // TODO apply filter
-    return key.substring(0, 1) == 'b';
-}
-
-function highlightTranslationStatus(state) {
-    $('[data-inscreen-translation]').each(function() {
-        const $this = $(this);
-        if (state) {
-            const keys = getTranslationKeys($this);
-            const state = {
-                outdated: false,
-                translate: false,
-                translated: false,
-                'do-not-translate': false
-            };
-            for (const key of keys) {
-                const meta = config.metadata.strings[key];
-                const translation = config.translation.strings[key] ?? generateEmptyStringTranslation(key);
-                try {
-                    if (translation["do-not-translate"] == true) {
-                        state['do-not-translate'] = true;
-                    }
-                    else if (translation.translations.hasOwnProperty(meta.hash)) {
-                        state['translated'] = true;
-                    }
-                    else if ((translation.translations[''] ?? '').length) {
-                        state['outdated'] = true;
-                    }
-                    else {
-                        state['translate'] = true;
-                    }
-                }
-                catch (err) {
-                    error('Exception during determination of translation status:', err)
-                }
-            }
-            $this.attr('data-inscreen-status', getTranslationStatus(state));
-        }
-        else {
-            $this.removeAttr('data-inscreen-status');
-        }
-    });
-}
-
-function generateEmptyStringTranslation(key) {
-    return {
-        key: key,
-        'do-not-translate': null,
-        annotation: '',
-        translations: {}
-    };
-}
-
-function getTranslationStatus(state) {
-    for(const key of ['translate', 'outdate', 'do-not-translate', 'translated']) {
-        if (state[key] == true) return key;
-    }
-    return 'translate';
-}
-
-function getTranslationKeys($el) {
-    const raw = $el.attr('data-inscreen-translation');
-    const keyObj = JSON.parse(raw);
-    const keys = {};
-    // Extract keys
-    for (const name in keyObj) {
-        for (const key of Object.keys(keyObj[name])) {
-            keys[key] = true;
-        }
-    }
-    return Object.keys(keys);
 }
 
 /**
- * Handles actions (mouse clicks on links, buttons)
- * @param {JQuery.ChangeEvent} event 
+ * Gets combined text and attributes content of an element
+ * @param {HTMLElement} el 
+ * @returns 
  */
-function updateToggles(event) {
-    const $toggle = $(event.target);
-    const name = $toggle.attr('data-inscreen-toggle') ?? '';
-    const state = $toggle.prop('checked');
-    log('Handling toggle:', name, state);
-    switch (name) {
-        case 'highlight-translation-status': {
-            highlightTranslationStatus(state);
-        }
-        break;
+function getTextAndAttributes(el) {
+    const parts = [];
+    const text = el.textContent;
+    if (text != null) parts.push(text);
+    for (const attr of el.attributes) {
+        const attrText = attr.textContent;
+        if (attrText != null) parts.push(attrText);
     }
+    return parts.join(' ');
 }
 
+//#endregion
+
+//#region Translation Dialog Setup
 
 function showInScreenTranslator() {
     if (!translationInitialized) {
@@ -538,34 +429,76 @@ function saveInScreenTranslatorCoords(event, ui) {
     });
 }
 
-/**
- * Decodes an invisible code
- * @param {string} encoded 
- * @returns {InvisiCode}
- */
-function decodeInvisiCode(encoded) {
-    // Convert to binary
-    const binary = encoded.split('').map(char => char == config.code0 ? '0' : '1').join('');
-    return {
-        binary: binary,
-        int: Number.parseInt(binary, 2)
-    };
-}
+//#endregion
+
+//#region Translation Dialog Toggles
 
 /**
- * 
- * @param {HTMLElement} el 
- * @returns 
+ * Handles actions (mouse clicks on links, buttons)
+ * @param {JQuery.ChangeEvent} event 
  */
-function getTextAndAttributes(el) {
-    const parts = [];
-    const text = el.textContent;
-    if (text != null) parts.push(text);
-    for (const attr of el.attributes) {
-        const attrText = attr.textContent;
-        if (attrText != null) parts.push(attrText);
+function updateToggles(event) {
+    const $toggle = $(event.target);
+    const name = $toggle.attr('data-inscreen-toggle') ?? '';
+    const state = $toggle.prop('checked');
+    log('Handling toggle:', name, state);
+    switch (name) {
+        case 'highlight-translation-status': {
+            highlightTranslationStatus(state);
+        }
+        case 'highlight-current': {
+            currentHighlighted = state;
+            updateItemHighlight();
+        }
+        break;
     }
-    return parts.join(' ');
+}
+
+function highlightTranslationStatus(state) {
+    $('[data-inscreen-translation]').each(function() {
+        const $this = $(this);
+        if (state) {
+            const keys = getTranslationKeys($this);
+            const state = {
+                outdated: false,
+                translate: false,
+                translated: false,
+                'do-not-translate': false
+            };
+            for (const key of keys) {
+                const meta = config.metadata.strings[key];
+                const translation = config.translation.strings[key] ?? generateEmptyStringTranslation(key);
+                try {
+                    if (translation["do-not-translate"] == true) {
+                        state['do-not-translate'] = true;
+                    }
+                    else if (translation.translations.hasOwnProperty(meta.hash)) {
+                        state['translated'] = true;
+                    }
+                    else if ((translation.translations[''] ?? '').length) {
+                        state['outdated'] = true;
+                    }
+                    else {
+                        state['translate'] = true;
+                    }
+                }
+                catch (err) {
+                    error('Exception during determination of translation status:', err)
+                }
+            }
+            $this.attr('data-inscreen-status', getTranslationStatus(state));
+        }
+        else {
+            $this.removeAttr('data-inscreen-status');
+        }
+    });
+}
+
+function updateItemHighlight() {
+    $('[data-inscreen-translation]').removeClass('in-screen-highlighted');
+    if (currentHighlighted && currentString != '') {
+        $('.in-screen-id-' + currentString).addClass('in-screen-highlighted');
+    }
 }
 
 //#endregion
@@ -574,12 +507,103 @@ function getTextAndAttributes(el) {
 
 /**
  * 
- * @param {string[]} items 
+ * @param {string[]} itemsObj 
  * @param {boolean} showMeta
  */
-function translateItems(items, showMeta = false) {
-    log('Translating items' + (showMeta ? ' (metadata)' : '') + ':', items);
+function translateItems(itemsObj, showMeta = false) {
+    log('Translating items' + (showMeta ? ' (metadata)' : '') + ':', itemsObj);
+
+    /** @type {Object<string,boolean>} */
+    const items = {};
+    // Reformat
+    for (const type of Object.keys(itemsObj)) {
+        for (const key of Object.keys(itemsObj[type])) {
+            items[key] = (items[key] ?? false) || (type != ''); // true when attribute
+        }
+    }
+    const itemsList = Object.keys(items);
+    if (itemsList.length > 1) {
+        showItemSelectorPopup(items);
+    }
+    else if (itemsList.length == 1) {
+        setCurrentString(itemsList[0]);
+    }
+}
+
+/**
+ * 
+ * @param {Object<string,boolean>} items 
+ */
+ function showItemSelectorPopup(items) {
+    log('Showing items selector for:', items);
     // TODO
+}
+
+function setCurrentString(key) {
+    log('Setting dialog to translate:', key);
+
+}
+
+/**
+ * Opens the string selector
+ */
+function openSelect() {
+    // @ts-ignore
+    $stringSelector.select2('open');
+}
+
+/**
+ * Updates the dialog when a new string is selected for editing
+ * @param {JQuery.ChangeEvent} event 
+ */
+function currentItemChanged(event) {
+    currentString = ($stringSelector.val() ?? '').toString();
+    log('Current item changed:', currentString);
+    updateItemHighlight();
+
+    // TODO show new values
+}
+
+//#endregion
+
+//#region Filtering
+
+function showItemsFilter() {
+    log('Showing the items filter.')
+    // TODO - Show modal
+
+    applyItemsFilter();
+}
+
+function applyItemsFilter() {
+    // TODO - construct filter object
+    currentFilter = {
+        translated: false
+    };
+    filterItems();
+    openSelect();
+}
+
+function filterItems() {
+    log('Filtering items:', currentFilter);
+    const $clearFilterButton = $('[data-action="clear-filter"]');
+    $clearFilterButton.prop('disabled', currentFilter == null).toggleClass('text-danger', currentFilter != null);
+    selectItems = Object.keys(stringsInPage).filter(key => matchFilter(key)).sort();
+    updateStringSelector();
+}
+
+function clearFilter() {
+    log('Clearing items filter.');
+    currentFilter = null;
+    filterItems();
+    openSelect();
+}
+
+function matchFilter(key) {
+    if (currentFilter === null) return true;
+
+    // TODO apply filter
+    return key.substring(0, 1) == 'b';
 }
 
 //#endregion
@@ -600,7 +624,7 @@ function handleAction(event) {
     if (!action || $source.prop('disabled')) return
     switch (action) {
         case 'refresh-translation': 
-            injectTranslationHooks();
+            preparePageForTranslation();
             break;
         case 'filter-items': 
             showItemsFilter();
@@ -617,6 +641,7 @@ function handleAction(event) {
 //#endregion
 
 //#region Keyboard
+
 /**
  * 
  * @param {JQuery.KeyPressEvent} event 
@@ -635,7 +660,7 @@ function keyPressed(event) {
     else {
         const $hover = $('[data-inscreen-translation]:hover');
         if ($hover.length > 0) {
-            const items = ($hover.attr('data-inscreen-translation') ?? '').split(',');
+            const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
             translateItems(items, event.key == 'm');
         }
     }
@@ -667,6 +692,58 @@ function setProgressModalProgress(percentage) {
 //#endregion
 
 //#region Helpers
+
+/**
+ * Decodes an invisible code
+ * @param {string} encoded 
+ * @returns {InvisiCode}
+ */
+function decodeInvisiCode(encoded) {
+    // Convert to binary
+    const binary = encoded.split('').map(char => char == config.code0 ? '0' : '1').join('');
+    return {
+        binary: binary,
+        int: Number.parseInt(binary, 2)
+    };
+}
+
+function generateEmptyStringTranslation(key) {
+    return {
+        key: key,
+        'do-not-translate': null,
+        annotation: '',
+        translations: {}
+    };
+}
+
+function getTranslationStatus(state) {
+    for(const key of ['translate', 'outdate', 'do-not-translate', 'translated']) {
+        if (state[key] == true) return key;
+    }
+    return 'translate';
+}
+
+function getTranslationKeys($el) {
+    const raw = $el.attr('data-inscreen-translation');
+    const keyObj = JSON.parse(raw);
+    const keys = {};
+    // Extract keys
+    for (const name in keyObj) {
+        for (const key of Object.keys(keyObj[name])) {
+            keys[key] = true;
+        }
+    }
+    return Object.keys(keys);
+}
+
+function addPageKey(key) {
+    stringsInPage[key] = (stringsInPage[key] ?? 0) + 1;
+}
+
+function addScriptKey(key) {
+    stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
+    addPageKey(key);
+}
 
 /**
  * 

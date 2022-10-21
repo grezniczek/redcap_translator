@@ -6,6 +6,9 @@
             <button data-action="filter-items" class="btn btn-light btn-xs ml-2"><i class="fa-solid fa-filter"></i> Filter items</button>
             <button data-action="clear-filter" class="btn btn-xs btn-light ml-1"><i class="fa-solid fa-filter-circle-xmark"></i></button>
         </div>
+        <div class="form-inline">
+            <button data-action="save-changes" class="btn btn-xs btn-light"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+        </div>
     </div>
     <div class="in-screen-body">
         <div class="custom-control custom-switch">
@@ -26,6 +29,14 @@
                 <input type="checkbox" class="custom-control-input" id="highlight-translation-status" data-inscreen-toggle="highlight-translation-status">
                 <label class="custom-control-label" style="padding-top: 2px;" for="highlight-translation-status">Show translation status</label>
             </div>
+            <div class="custom-control custom-switch ml-2">
+                <input type="checkbox" class="custom-control-input" id="highlight-current" data-inscreen-toggle="highlight-current">
+                <label class="custom-control-label" style="padding-top: 2px;" for="highlight-current">Highlight selected</label>
+            </div>
         </div>
     </div>
+</div>
+<!-- Items Selector Popup -->
+<div id="in-screen-items-selector-popup">
+
 </div>

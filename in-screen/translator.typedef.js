@@ -10,6 +10,7 @@
  * @typedef REDCapInScreenTranslator_Config
  * @type {{
  *  debug: boolean
+ *  auth: boolean
  *  jsmoName: string
  *  name: string
  *  basedOn: string

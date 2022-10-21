@@ -51,3 +51,8 @@
     padding: 10px;
     background-color: lightblue;
 }
+
+.in-screen-highlighted {
+    background-color: yellow;
+    outline: 2px yellow solid;
+}
