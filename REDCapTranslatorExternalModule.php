@@ -358,6 +358,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         // Prepare initialization object
         $settings = array(
             "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
+            "auth" => defined("USERID"),
             "jsmoName" => $this->getJavascriptModuleObjectName(),
             "name" => $current_translation["name"],
             "basedOn" => $current_translation["based-on"],
