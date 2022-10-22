@@ -62,3 +62,7 @@
     margin: 0;
     padding-left: 2em;
 }
+
+.in-screen-items-list .badge {
+    font-weight: normal;
+}

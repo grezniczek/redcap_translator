@@ -61,8 +61,9 @@ function init(data) {
     JSMO = resolveJSMO(config.jsmoName);
 
     $(function() {
-        log('Initialized.', config);
-
+        // Key capture
+        $('body').on('keypress', keyPressed);
+        // Dialog
         $dialog = $('#in-screen-translation-editor');
         // This keeps the dialog on top of other dialogs
         $(document).on("dialogopen", ".ui-dialog", function (event, ui) {
@@ -76,6 +77,7 @@ function init(data) {
         // Main elements
         $stringSelector = $dialog.find('[data-translator-item="current-key"]');
         $saveButton = $dialog.find('[data-action="save-changes"]');
+        log('Initialized.', config);
         // Autostart
         if (config.auth && autostart) {
             translate();
@@ -169,7 +171,7 @@ function processElement(el, counter) {
         }
     }
     //#endregion
-    //#region Elements
+    //#region OPTION tags
     if (isOption && el.textContent?.includes(config.codeStart)) {
         const keys = {};
         let text = el.textContent ?? '';
@@ -393,8 +395,6 @@ function showInScreenTranslator() {
             // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
             $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
         }
-        // Capture keyboard (T = translate, M = metadata)
-        $('body').on('keypress', keyPressed);
         // Capture toggles
         $('[data-inscreen-toggle]').on('change', updateToggles);
         // Visual
@@ -513,19 +513,20 @@ function updateItemHighlight() {
 
 /**
  * 
- * @param {string[]} itemsObj 
- * @param {boolean} showMeta
+ * @param {Object} itemsObj 
  * @param {JQuery<HTMLElement>} $target
  */
-function translateItems(itemsObj, showMeta, $target) {
-    log('Translating items' + (showMeta ? ' (metadata)' : '') + ':', itemsObj);
+function translateItems(itemsObj, $target) {
+    log('Translating items:', itemsObj);
 
-    /** @type {Object<string,boolean>} */
+    /** @type {Object<string,Object<string,boolean>>} */
     const items = {};
     // Reformat
     for (const type of Object.keys(itemsObj)) {
         for (const key of Object.keys(itemsObj[type])) {
-            items[key] = (items[key] ?? false) || (type != ''); // true when attribute
+            const list = items[key] ?? {};
+            list[type] = true;
+            items[key] = list;
         }
     }
     const itemsList = Object.keys(items);
@@ -539,7 +540,17 @@ function translateItems(itemsObj, showMeta, $target) {
 
 /**
  * 
- * @param {Object<string,boolean>} items 
+ * @param {Object} itemsObj 
+ * @param {JQuery<HTMLElement>} $target
+ */
+function toggleTranslation(itemsObj, $target) {
+    log('Toggeling translations:', itemsObj);
+    // TODO
+}
+
+/**
+ * 
+ * @param {Object<string,Object<string,boolean>>} items 
  * @param {JQuery<HTMLElement>} $target
  */
  function showItemSelectorPopover(items, $target) {
@@ -559,10 +570,12 @@ function translateItems(itemsObj, showMeta, $target) {
         const $li = $('<li></li>');
         const $a = $('<a href="#">' + key + '</a>').on('click', goto);
         $li.append($a);
-        if (items[key]) {
-            // Add attribute pill
-            const $badge = $('<span class="badge badge-info badge-sm ml-2">Attribute</span>');
-            $li.append($badge);
+        for (const type of Object.keys(items[key])) {
+            // Add attribute pills
+            if (type != '') {
+                const $badge = $('<span class="badge badge-info badge-sm ml-1">' + type + '</span>');
+                $li.append($badge);
+            }
         }
         $ul.append($li);
     }
@@ -720,21 +733,39 @@ function handleAction(event) {
  * @param {JQuery.KeyPressEvent} event 
  */
 function keyPressed(event) {
-    if (!'mrtT'.split('').includes(event.key)) return; // Ignore all except m, t, T, and R
+    // Ignore all except (e)dit, (r)efresh, (t)oggle, (T)ranslate
+    if (!'ertT'.split('').includes(event.key)) return;
     const $target = $(event.target);
-    if ($target.is('input:focus, textarea:focus')) return; // Ignore when an input/textarea has focus
-
-    if (event.key == 'r') {
-        translate();
-    }
+    // Ignore when an input/textarea has focus
+    if ($target.is('input:focus, textarea:focus')) return;
+    // (T)ranslate
     if (event.key == 'T') {
-        translate();
+        if (!config.auth && !translationInitializing) {
+            // Prompt for password
+            // TODO
+            const password = '';
+            translate(password);
+        }
+        else {
+            translate();
+        }
     }
-    else {
-        const $hover = $('[data-inscreen-translation]:hover');
-        if ($hover.length > 0) {
-            const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
-            translateItems(items, event.key == 'm', $hover);
+    // Only pay attention to others once translation has been initialized
+    if (translationInitialized) {
+        if (event.key == 'r') {
+            translate();
+        }
+        else {
+            const $hover = $('[data-inscreen-translation]:hover');
+            if ($hover.length > 0) {
+                const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
+                if (event.key == 'e') {
+                    translateItems(items, $hover);
+                }
+                else if (event.key == 't') {
+                    toggleTranslation(items, $hover);
+                }
+            }
         }
     }
 }
