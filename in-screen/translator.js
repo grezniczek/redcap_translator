@@ -146,9 +146,10 @@ function setupTranslation(password = '') {
  * Recursively parses elements, drilling down the element tree
  * @param {HTMLElement} el Start element
  * @param {Number} counter A counter that's increased for each parsed element
+ * @param {boolean} reprocess 
  * @returns 
  */
-function processElement(el, counter) {
+function processElement(el, counter, reprocess = false) {
     counter++;
     // Is there work to do? At least one code starter must be present
     if (!getTextAndAttributes(el).includes(config.codeStart)) return counter;
@@ -202,7 +203,15 @@ function processElement(el, counter) {
         /** @type {HTMLElement|null} */
         let currentWrapper = null;
         const childNodes = []
-        el.childNodes.forEach(child => childNodes.push(child));
+        el.childNodes.forEach(child => {
+            let add = true;
+            if (child.nodeType == Node.ELEMENT_NODE) {
+                add = add && !(reprocess && typeof $(child).attr('data-inscreen-translation') == 'string');
+            } 
+            if (add) {
+                childNodes.push(child)
+            }
+        });
         for (const child of childNodes) {
             if (child.nodeType == Node.TEXT_NODE && child.textContent?.includes(config.codeStart)) {
                 log('Processing text child:', $(child), $(el));
@@ -215,6 +224,10 @@ function processElement(el, counter) {
                 const decoded = decodeInvisiCode(code);
                 const key = config.keys[decoded.int];
                 addPageKey(key);
+                // When the language string doesn't start at the beginning, add that part before as a text node
+                if (start > 0) {
+                    el.insertBefore(document.createTextNode(text.substring(0, start)), child);
+                }
                 // log ('Code / Decoded / Key:', code, decoded, key);
                 const end = text.indexOf(config.stringTerminator, start + 17);
                 // Prepend wrapper
@@ -236,7 +249,7 @@ function processElement(el, counter) {
                     const partial = document.createTextNode(space + text.substring(start + 17, end));
                     span.append(partial);
                     child.textContent = text.substring(end + 1);
-                    return processElement(el, counter -1);
+                    return processElement(el, counter -1, true);
                 }
             }
             else if (child.nodeType == Node.TEXT_NODE && child.textContent?.includes(config.stringTerminator)) {
