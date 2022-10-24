@@ -28,7 +28,6 @@ class REDCapTranslatorPlugin {
             "downloadUrl" => urldecode(self::$m->getUrl("plugin/download.php")),
             "csrfToken" => self::$m->getCSRFToken(),
             "password" => self::$m->get_password(),
-            "state" => self::$m->get_state(),
         );
         // Metadata files
         $metadata_files = self::$m->get_metadata_files();
