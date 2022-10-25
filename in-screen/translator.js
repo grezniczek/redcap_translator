@@ -69,7 +69,12 @@ function init(data) {
         $(document).on("dialogopen", ".ui-dialog", function (event, ui) {
             if (event.target.dataset['translationWidget'] != 'in-screen-editor') {
                 warn('New dialog detected:', event.target)
-                $dialog.dialog('moveToTop');
+                try {
+                    $dialog.dialog('moveToTop');
+                }
+                catch (ex) {
+                    // Ignore
+                }
             }
         });
         // Actions
