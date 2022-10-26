@@ -377,10 +377,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     private function get_dialog_coordinates() {
         $coords = $this->getSystemSetting(self::DIALOG_COORDINATES_SETTING_NAME) ?? [
-            "left" => 0,
-            "top" => 0,
-            "width" => 0,
-            "height" => 0,
+            "left" => 10,
+            "top" => 10,
+            "width" => 500,
+            "height" => 300,
             "positionUpdated" => false,
             "sizeUpdated" => false
         ];

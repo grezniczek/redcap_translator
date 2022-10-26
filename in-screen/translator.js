@@ -372,7 +372,7 @@ function updateStringSelector() {
  */
 function getTextAndAttributes(el) {
     const parts = [];
-    const text = el.textContent;
+    const text = el.innerHTML ?? '';
     if (text != null) parts.push(text);
     for (const attr of el.attributes) {
         const attrText = attr.textContent;
@@ -386,48 +386,39 @@ function getTextAndAttributes(el) {
 //#region Translation Dialog Setup
 
 function showInScreenTranslator() {
+    const settings = { 
+        closeText: 'Close',
+        title: 'In-Screen Translator',
+        draggable: true,
+        resizable: true,
+        modal: false, 
+        width: config.dialogPosition.width,
+        height: config.dialogPosition.height,
+        minHeight: 300,
+        minWidth: 500,
+        position: [config.dialogPosition.left, config.dialogPosition.top],
+        closeOnEscape: true,
+        close: handleInScreenTranslatorClosed,
+        dragStop: saveInScreenTranslatorCoords,
+        resizeStop: saveInScreenTranslatorCoords,
+    }
+    $dialog.dialog(settings);
+    // Visual
+    // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
+    $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
+    $dialog.parents('div[role="dialog"]').css('border', '2px #337ab7 solid');
     if (!translationInitialized) {
-        const position = config.dialogPosition.positionUpdated ? [config.dialogPosition.left, config.dialogPosition.top ] : {
-            my: "right bottom",
-            at: "right-10 bottom-10",
-            of: window
-        };
-        const settings = { 
-            closeText: 'Close',
-            title: 'In-Screen Translator',
-            draggable: true,
-            resizable: true,
-            modal: false, 
-            width: config.dialogPosition.sizeUpdated ? config.dialogPosition.width : '50%',
-            height: config.dialogPosition.sizeUpdated ? config.dialogPosition.height : 'auto',
-            minHeight: 300,
-            minWidth: 400,
-            position: position,
-            closeOnEscape: true,
-            close: handleInScreenTranslatorClosed,
-            dragStop: saveInScreenTranslatorCoords,
-            resizeStop: saveInScreenTranslatorCoords,
-        }
-        $dialog.dialog(settings);
-        if (config.dialogPosition.positionUpdated) {
-            // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
-            $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
-        }
         // Capture toggles
         $('[data-inscreen-toggle]').on('change', updateToggles);
-        // Visual
-        $dialog.parents('div[role="dialog"]').css('border', '2px #337ab7 solid');
+        $dialog[0].scrollIntoView(false);
     }
-    else {
-        $dialog.dialog('open');
-    }
-    $dialog[0].scrollIntoView(false);
-    log('In-Screen Translator dialog shown.', $dialog.dialog('option'));
+    log('In-Screen Translator dialog shown.', config.dialogPosition, $dialog.dialog('option'));
 }
 
+
 function handleInScreenTranslatorClosed(event, ui) {
-    log('In-Screen Translator dialog hidden.')
-    setCurrentString('');
+    log('In-Screen Translator dialog hidden.');
+    $dialog.dialog('destroy');
 }
 
 function saveInScreenTranslatorCoords(event, ui) {
@@ -444,7 +435,12 @@ function saveInScreenTranslatorCoords(event, ui) {
     JSMO.ajax('set-dialog-coordinates', config.dialogPosition)
     .then(function(response) {
         if (response.success) {
-            log ('In-Screen Translatior dialog move/resized:', config.dialogPosition);
+            log ('In-Screen Translatior dialog move/resized:', config.dialogPosition, ui);
+        }
+        if (config.dialogPosition.sizeUpdated) {
+            // Fix display quirks by closing/re-opening
+            $dialog.dialog('destroy');
+            showInScreenTranslator();
         }
     })
     .catch(function(err) {
@@ -470,6 +466,7 @@ function updateToggles(event) {
         case 'highlight-translation-status': {
             highlightTranslationStatus(state);
         }
+        break;
         case 'highlight-current': {
             currentHighlighted = state;
             updateItemHighlight();

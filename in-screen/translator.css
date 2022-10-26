@@ -12,49 +12,83 @@
     outline-color: red;
 }
 [data-inscreen-status="translate"] {
-    outline-color: red;
+    outline-color: red !important;
 }
 [data-inscreen-status="do-not-translate"] {
-    outline-color: rgb(65, 144, 180);
+    outline-color: rgb(65, 144, 180) !important;
 }
 [data-inscreen-status="translated"] {
-    outline-color: green;
+    outline-color: green !important;
 }
 [data-inscreen-status="outdated"] {
-    outline-color: orange;
+    outline-color: orange !important;
 }
 
+
+.in-screen-highlighted {
+    background-color: yellow;
+    outline: 2px yellow solid;
+}
 
 
 /* Translator Dialog */
 
-[data-translation-widget="in-screen-editor"] {
-    display: flex;
-    justify-content: space-between;
-    flex-direction: column;
+#in-screen-translation-editor {
     padding: 0 !important;
 }
 
+.in-screen-translation-container {
+    display: grid;
+    grid-template-rows: 45px 1fr 45px;
+    grid-template-columns: 1fr 250px;
+    grid-template-areas: 
+        "header header"
+        "translation metadata"
+        "footer footer";
+    max-height: 100%;
+    height: 100%;
+}
+
 .in-screen-top {
-    padding: 10px;
+    grid-area: header;
+    align-self: self-start;
+    padding: 10px 2px 0 10px;
     padding-bottom: 0;
     display: flex;
     justify-content: space-between;
     flex-direction: row;
     align-items: center;
 }
-.in-screen-body {
-    padding: 10px;
-    height: 100%;
+
+.in-screen-translation-items {
+    grid-area: translation;
+    padding: 0 10px;
+    overflow-y: auto;
 }
+
+.in-screen-metadata-items {
+    grid-area: metadata;
+    background-color: #fafafa;
+    padding-left: 10px;
+    border-left: 1px solid black;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
 .in-screen-footer {
+    grid-area: footer;
     padding: 10px;
+    margin-top: 5px;
     background-color: rgb(188, 214, 223);
 }
 
-.in-screen-highlighted {
-    background-color: yellow;
-    outline: 2px yellow solid;
+
+#in-screen-translation-editor h2 {
+    line-height: 1;
+    margin: .5em 0;
+    font-size: 1em;
+    font-weight: bold;
+    font-style: italic;
 }
 
 .in-screen-items-list {
@@ -65,4 +99,9 @@
 
 .in-screen-items-list .badge {
     font-weight: normal;
+}
+
+.in-screen-translation-title {
+    display: flex;
+    justify-content: space-between;
 }
