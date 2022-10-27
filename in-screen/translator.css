@@ -33,6 +33,29 @@
 
 /* Translator Dialog */
 
+#in-screen-translation-editor .flex-h-left {
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    align-items: center;
+}
+
+#in-screen-translation-editor .copy-button {
+    margin: 0 .5em;
+    text-decoration: none;
+    font-size: 80%;
+}
+#in-screen-translation-editor .copy-button:hover {
+    text-decoration: none;
+    color: red;
+    outline: none;
+}
+#in-screen-translation-editor .copy-button:focus:not(:hover) {
+    text-decoration: none;
+    color: black;
+    outline: none;
+}
+
 #in-screen-translation-editor {
     padding: 0 !important;
 }
@@ -69,10 +92,19 @@
 .in-screen-metadata-items {
     grid-area: metadata;
     background-color: #fafafa;
-    padding-left: 10px;
+    padding: 0 10px;
     border-left: 1px solid black;
     overflow-y: auto;
     scroll-behavior: smooth;
+}
+
+.in-screen-metadata-badges {
+    margin-left: 10px;
+    display: flex;
+    flex-direction: row;
+    justify-content: start;
+    align-items: center;
+    gap: 5px;
 }
 
 .in-screen-footer {
@@ -85,10 +117,22 @@
 
 #in-screen-translation-editor h2 {
     line-height: 1;
-    margin: .5em 0;
+    margin: 0.5em 0 0.5em 0;
     font-size: 1em;
     font-weight: bold;
     font-style: italic;
+}
+
+#in-screen-translation-editor h3 {
+    line-height: 1;
+    margin: 0.5em 0 0.5em 0;
+    font-size: 1em;
+    font-weight: normal;
+    font-style: italic;
+}
+
+#in-screen-translation-editor .v-spacer {
+    height: 10px;
 }
 
 .in-screen-items-list {

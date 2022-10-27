@@ -388,13 +388,13 @@ function getTextAndAttributes(el) {
 function showInScreenTranslator() {
     const settings = { 
         closeText: 'Close',
-        title: 'In-Screen Translator',
+        title: '<i class="fas fa-exchange-alt small"></i>&nbsp;&nbsp;In-Screen Translator',
         draggable: true,
         resizable: true,
         modal: false, 
         width: config.dialogPosition.width,
         height: config.dialogPosition.height,
-        minHeight: 300,
+        minHeight: 400,
         minWidth: 500,
         position: [config.dialogPosition.left, config.dialogPosition.top],
         closeOnEscape: true,
@@ -404,9 +404,10 @@ function showInScreenTranslator() {
     }
     $dialog.dialog(settings);
     // Visual
+    $dialog.parents('div[role="dialog"]').css('border', '2px #337ab7 solid').find('.ui-dialog-titlebar').css('padding-left','0.6em');
     // Unfortunate necessity, as otherwise the dialog appears pinned to the top left corner of <body>
     $dialog.dialog('widget').css('left', config.dialogPosition.left + 'px').css('top', config.dialogPosition.top + 'px');
-    $dialog.parents('div[role="dialog"]').css('border', '2px #337ab7 solid');
+    $dialog.find('.textarea-autosize').textareaAutoSize();
     if (!translationInitialized) {
         // Capture toggles
         $('[data-inscreen-toggle]').on('change', updateToggles);
@@ -974,3 +975,13 @@ function log_print(ln, mode, args) {
 //#endregion
 
 })();
+
+//#region Libs
+/*!
+ * jQuery Textarea AutoSize plugin : https://github.com/javierjulio/textarea-autosize
+ * Author: Javier Julio
+ * Licensed under the MIT license
+ */
+// @ts-ignore
+(function(t,e,i,n){function s(e,i){this.element=e,this.$element=t(e),this.init()}var h="textareaAutoSize",o="plugin_"+h,r=function(t){return t.replace(/\s/g,"").length>0};s.prototype={init:function(){var i=parseInt(this.$element.css("paddingBottom"))+parseInt(this.$element.css("paddingTop"))+parseInt(this.$element.css("borderTopWidth"))+parseInt(this.$element.css("borderBottomWidth"))||0;r(this.element.value)&&this.$element.height(this.element.scrollHeight-i),this.$element.on("input keyup",function(n){var s=t(e),h=s.scrollTop();t(this).height(0).height(this.scrollHeight-i),s.scrollTop(h)})}},t.fn[h]=function(e){return this.each(function(){t.data(this,o)||t.data(this,o,new s(this,e))}),this}})(jQuery,window,document);
+//#endregion
