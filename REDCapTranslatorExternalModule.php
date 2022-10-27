@@ -457,6 +457,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             $changed = false; // TODO - based on prev file
             $html = $this->contains_html($text); // TODO - or'ed with prev file - if unknown: null
             $length_restricted = null; // TODO - merge prev, null = unknown, 0 = unrestricted, n = restricted to n
+            $interpolations = $this->get_interpolations($text);
             $entry = [
                 "key" => $key,
                 "text" => $text,
@@ -465,9 +466,16 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 "new" => $new,
                 "changed" => $changed,
                 "html" => $html,
-                "interpolated" => $this->num_interpolations($text),
+                "interpolated" => count($interpolations),
+                "interpolations-hints" => [],
                 "length-restricted" => $length_restricted,
             ];
+            foreach ($interpolations as $id => $hint) {
+                $entry["interpolations-hints"][] = array(
+                    "id" => "$id",
+                    "hint" => $hint
+                );
+            }
             $json["strings"][$key] = $entry;
         }
         // Stats
@@ -781,13 +789,20 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
     private function contains_html($s) {
-        return strcmp($s, strip_tags($s)) != 0;
+        return strcmp($s, strip_tags($s)) != 0 ? true : null;
     }
 
-    private function num_interpolations($s) {
-        $n = preg_match_all('/.*\{\d+(:.+){0,1}\}/m', $s);
-        if ($n === false) $n = 0;
-        return $n;
+    private function get_interpolations($s) {
+        $interpolations = [];
+        // https://regex101.com/r/6eWQMc/1
+        $re = '/\{(?\'id\'\d+)(:(?\'hint\'.+)){0,1}\}/mU';
+        preg_match_all($re, $s, $matches, PREG_SET_ORDER, 0);
+        foreach ($matches as $match) {
+            if (isset($match["id"])) {
+                $interpolations[$match["id"]] = $match["hint"] ?? "";
+            }
+        }
+        return $interpolations;
     }
 
     public function encode_invisible($idx) {

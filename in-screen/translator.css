@@ -56,6 +56,11 @@
     outline: none;
 }
 
+#in-screen-translation-editor .textarea-autosize {
+    overflow: hidden;
+}
+
+
 #in-screen-translation-editor {
     padding: 0 !important;
 }

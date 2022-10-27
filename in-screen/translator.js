@@ -228,13 +228,33 @@ function processElement(el, counter, reprocess = false) {
                 const code = text.substring(start + 1, start + 17);
                 const decoded = decodeInvisiCode(code);
                 const key = config.keys[decoded.int];
+                const partialEnd = text.indexOf(config.stringTerminator);
+                const end = text.indexOf(config.stringTerminator, start + 17);
                 addPageKey(key);
+                // Check if there is a terminator BEFORE the start
+                if (partialEnd > -1 && partialEnd < start) {
+                    // This implies that a wrapper must be open
+                    if (currentWrapper == null) {
+                        error('Processing error. Partial string with terminator and no wrapper!', $(el));
+                    }
+                    else {
+                        // Add partial with end
+                        const partial = document.createTextNode(text.substring(0, partialEnd));
+                        currentWrapper.append(partial);
+                        child.textContent = text.substring(end + 1);
+                        currentWrapper = null;
+                        // Is there more between?
+                        if (text.substring(partialEnd + 1, start).trim() != '') {
+                            // Add text node
+                            el.insertBefore(document.createTextNode(text.substring(partialEnd + 1, start)), child);
+                        }
+                    }
+                }
                 // When the language string doesn't start at the beginning, add that part before as a text node
-                if (start > 0) {
+                if ((partialEnd == -1 || partialEnd > start) && start > 0) {
                     el.insertBefore(document.createTextNode(text.substring(0, start)), child);
                 }
                 // log ('Code / Decoded / Key:', code, decoded, key);
-                const end = text.indexOf(config.stringTerminator, start + 17);
                 // Prepend wrapper
                 const span = document.createElement('span');
                 const spanAttr = {'':{}};
@@ -394,8 +414,8 @@ function showInScreenTranslator() {
         modal: false, 
         width: config.dialogPosition.width,
         height: config.dialogPosition.height,
-        minHeight: 400,
-        minWidth: 500,
+        minHeight: 480,
+        minWidth: 540,
         position: [config.dialogPosition.left, config.dialogPosition.top],
         closeOnEscape: true,
         close: handleInScreenTranslatorClosed,
@@ -530,7 +550,7 @@ function updateItemHighlight() {
 /**
  * 
  * @param {Object} itemsObj 
- * @param {JQuery<HTMLElement>} $target
+ * @param {JQuery<Element>} $target
  */
 function translateItems(itemsObj, $target) {
     log('Translating items:', itemsObj);
@@ -557,7 +577,7 @@ function translateItems(itemsObj, $target) {
 /**
  * 
  * @param {Object} itemsObj 
- * @param {JQuery<HTMLElement>} $target
+ * @param {JQuery<Element>} $target
  */
 function toggleTranslation(itemsObj, $target) {
     log('Toggeling translations:', itemsObj);
@@ -567,7 +587,7 @@ function toggleTranslation(itemsObj, $target) {
 /**
  * 
  * @param {Object<string,Object<string,boolean>>} items 
- * @param {JQuery<HTMLElement>} $target
+ * @param {JQuery<Element>} $target
  */
  function showItemSelectorPopover(items, $target) {
     log('Showing items selector for:', items, $target);
@@ -772,15 +792,19 @@ function keyPressed(event) {
             translate();
         }
         else {
-            const $hover = $('[data-inscreen-translation]:hover');
-            if ($hover.length > 0) {
-                const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
-                if (event.key == 'e') {
-                    translateItems(items, $hover);
+            const hoverEls = document.querySelectorAll('[data-inscreen-translation]:hover');
+            if (hoverEls.length) {
+                const $hover = $(hoverEls.item(hoverEls.length - 1));
+                if ($hover.length > 0) {
+                    const items = JSON.parse($hover.attr('data-inscreen-translation') ?? '{"":{}}');
+                    if (event.key == 'e') {
+                        translateItems(items, $hover);
+                    }
+                    else if (event.key == 't') {
+                        toggleTranslation(items, $hover);
+                    }
                 }
-                else if (event.key == 't') {
-                    toggleTranslation(items, $hover);
-                }
+
             }
         }
     }

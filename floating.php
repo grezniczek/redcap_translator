@@ -56,7 +56,7 @@
             <!-- HTML support -->
             <div class="flex-h-left">
                 <h3>HTML Support</h3>
-                <div data-inscreen-visibility="reset-html-support">
+                <div data-inscreen-visibility="html-support">
                     &nbsp;&mdash;<a href="#" data-action="reset-html-support" class="copy-button"><i class="fas fa-times"></i> Reset</a>
                 </div>
             </div>
@@ -70,7 +70,46 @@
                     <label class="form-check-label" for="html-support-0">Plain text only</label>
                 </div>
             </div>
+            <div class="v-spacer"></div>
             <!-- Length restriction -->
+            <div class="flex-h-left">
+                <h3>Length Restriction</h3>
+                <div data-inscreen-visibility="length-restricted">
+                    &nbsp;&mdash;<a href="#" data-action="reset-length-restricted" class="copy-button"><i class="fas fa-times"></i> Reset</a>
+                </div>
+            </div>
+            <div class="in-screen-metadata-badges">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="length-restricted" id="length-restricted-0" value="0">
+                    <label class="form-check-label" for="length-restricted-0">No</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="length-restricted" id="length-restricted-1" value="1">
+                    <label class="form-check-label" for="length-restricted-1">Yes</label>
+                </div>
+                <div data-inscreen-visibility="length-restricted">
+                    <input style="max-width:70px;" type="number" min="0" class="form-control form-control-sm" data-inscreen-content="length-restricted-px">
+                </div>
+                <div data-inscreen-visibility="length-restricted">
+                    px
+                </div>
+            </div>
+            <div data-inscreen-visibility="interpolated">
+                <div class="v-spacer"></div>
+                <div class="flex-h-left">
+                    <h3>Interpolations</h3>
+                </div>
+                <div class="in-screen-metadata-badges">
+                </div>
+                <template data-inscreen-template="interpolation-hint">
+                    <div class="form-inline">
+                        <div class="form-group">
+                            <label for="interpolation-X">XY =</label>
+                            <input type="text" class="form-control ml-2" id="interpolation-X" value="XY">
+                        </div>
+                    </div>
+                </template>
+            </div>
             <!-- Interpolations -->
             <div class="v-spacer"></div>
             <!-- Annotation -->
