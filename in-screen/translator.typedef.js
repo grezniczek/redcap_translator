@@ -54,7 +54,16 @@
  *  html: boolean|null
  *  'length-restricted': boolean|null
  *  interpolated: Number
+ *  'interpolation-hints': InterpolationData[]
  *  new: boolean
+ * }}
+ */
+
+/**
+ * @typedef InterpolationData
+ * @type {{
+ *  id: string
+ *  hint: string
  * }}
  */
 
