@@ -8,6 +8,11 @@
     background-color: yellow;
     outline-width: 2px;
 }
+[data-inscreen-translation]:hover:has([data-inscreen-translation]:hover) {
+    background-color: unset;
+    outline-width: 2px;
+}
+
 [data-inscreen-translation]:hover:not([data-inscreen-status]) {
     outline-color: red;
 }
