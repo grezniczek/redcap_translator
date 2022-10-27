@@ -47,6 +47,8 @@ var currentString = '';
 var currentFilter = null;
 var currentHighlighted = true;
 
+const showOriginalCache = {}
+
 
 // DEBUG ONLY - TODO: Set to false
 const autostart = true;
@@ -141,7 +143,7 @@ function setupTranslation(password = '') {
         translationInitializing = false;
         setTimeout(() => {
             hideProgressModal();
-            log('Initialization complete.');
+            log('Initialization complete.', config);
         }, 200);
     });
 }
@@ -492,6 +494,10 @@ function updateToggles(event) {
             updateItemHighlight();
         }
         break;
+        case 'show-original': {
+            setShowOriginalState(currentString, state);
+        }
+        break;
     }
 }
 
@@ -685,8 +691,110 @@ function updateTranslationDialog() {
     }
     const translation = getStringTranslation(currentString);
     log('Setting dialog to translate:', metadata, translation);
+    const translatedText = getTranslation(currentString);
+    // Translation pane
+    $dialog.find('[data-inscreen-content="translation"]').val(translatedText.text);
+    $dialog.find('[data-inscreen-content="do-not-translate"]').prop('checked', translation["do-not-translate"]);
+    $dialog.find('[data-inscreen-content="metadata-text"]').text(metadata.text);
+    $dialog.find('[data-inscreen-content="translation-annotation"]').val(translation.annotation);
+    $dialog.find('[data-inscreen-toggle="show-original"]').prop('checked', getShowOriginalState(currentString));
+    // Metadata pane
+    // Badges
+    $dialog.find('[data-inscreen-badge="new"]')[metadata.new == true ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-badge="changed"]')[metadata.changed == true ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-badge="interpolated"]')[metadata.interpolated > 0 ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-badge="missing"]')[metadata.translate && translatedText.text == '' ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-badge="outdated"]')[translatedText.text != '' && !translatedText.isMatch ? 'show' : 'hide']();
+    // HTML Support
+    $dialog.find('[data-inscreen-content="html-supported"]').prop('checked', metadata.html === true);
+    $dialog.find('[data-inscreen-content="html-not-supported"]').prop('checked', metadata.html === false);
+    // Length Restriction
+    // TODO
+    
+    // Interpolations
+    $dialog.find('[data-inscreen-visibility="interpolated"]')[metadata.interpolated > 0 ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-container="interpolations"]').html('');
+    for (const item of metadata["interpolation-hints"]) {
+        const $row = getTemplate('interpolation-hint');
+        log('TODO - add interpolation', item, $row);
+    }
+    // TODO
 
 
+    // Annotation
+    $dialog.find('[data-inscreen-content="metadata-annotation"]').val(metadata.annotation);
+
+    // Split and translation
+    $dialog.find('[data-inscreen-content="metadata-split"]').prop('checked', metadata.split);
+    $dialog.find('[data-inscreen-content="metadata-do-not-translate"]').prop('checked', !metadata.translate);
+    toggleMetadataResetLinks();
+}
+
+function toggleMetadataResetLinks() {
+    const htmlSupport = $dialog.find('[data-inscreen-content="html-supported"]').prop('checked') || 
+        $dialog.find('[data-inscreen-content="html-not-supported"]').prop('checked');
+    $dialog.find('[data-inscreen-visibility="html-support"]')[htmlSupport !== '' ? 'show' : 'hide']();
+    
+}
+
+
+/**
+ * 
+ * @param {string} key 
+ * @returns boolean
+ */
+function getShowOriginalState(key) {
+    showOriginalCache[key] = showOriginalCache[key] ?? false;
+    return showOriginalCache[key];
+}
+
+/**
+ * 
+ * @param {string} key 
+ * @param {boolean} showOriginal 
+ */
+function setShowOriginalState(key, showOriginal) {
+    if (!config.metadata.strings.hasOwnProperty(key)) return;
+    log('Showing ' + (showOriginal ? 'original' : 'translation') + ' of item ' + key);
+    showOriginalCache[key] = showOriginal;
+    const text = showOriginal ? getOriginal(key) : getTranslation(key).text;
+    if (text != '') {
+        $('.in-screen-id-' + key).html(text);
+    }
+}
+
+
+/**
+ * 
+ * @param {string} key 
+ * @returns {TranslatedString}
+ */
+function getTranslation(key) {
+    const metadata = getStringMetadata(key);
+    if (!metadata) {
+        warn('Cannot translate item \'' + key + '\'.');
+        return { text: '', isMatch: false };
+    }
+    const translation = getStringTranslation(key);
+    if (translation.translations.hasOwnProperty(metadata.hash)) {
+        return {
+            text: translation.translations[metadata.hash],
+            isMatch: true
+        };
+    }
+    return {
+        text: translation.translations[''] ?? '',
+        isMatch: false
+    };
+}
+
+/**
+ * 
+ * @param {string} key 
+ * @returns {string}
+ */
+function getOriginal(key) {
+    return config.metadata.strings[key]?.text ?? '';
 }
 
 /**
@@ -708,6 +816,12 @@ function getStringTranslation(key) {
         config.translation.strings[key] = generateEmptyStringTranslation(key);
     }
     return config.translation.strings[key];
+}
+
+function saveChanges() {
+    log('Saving changes');
+
+    // TODO
 }
 
 //#endregion
@@ -785,6 +899,9 @@ function handleAction(event) {
             break;
         case 'clear-filter': 
             clearFilter();
+            break;
+        case 'save-changes':
+            saveChanges();
             break;
         default: 
             log('Unknown action:', action);
@@ -867,6 +984,17 @@ function setProgressModalProgress(percentage) {
 //#endregion
 
 //#region Helpers
+
+
+/**
+ * Gets a template by name and returns its jQuery representation
+ * @param {string} name 
+ * @returns {JQuery<HTMLElement>}
+ */
+function getTemplate(name) {
+    var $tpl = $($dialog.find('[data-template="' + name + '"]').html())
+    return $tpl
+}
 
 /**
  * Decodes an invisible code

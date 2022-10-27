@@ -24,7 +24,7 @@
             </div>
             <textarea class="form-control textarea-autosize" data-inscreen-content="translation" rows="2" placeholder="Enter translation"></textarea>
             <div class="form-check ml-1">
-                <input data-inscreen-toggle="do-not-translate" class="form-check-input" type="checkbox" value="" id="check-do-not-translate">
+                <input data-inscreen-content="do-not-translate" class="form-check-input" type="checkbox" value="" id="check-do-not-translate">
                 <label class="form-check-label" style="margin-top:2px;" for="check-do-not-translate">
                     Marked as <small><b><i>DO NOT TRANSLATE</i></b></small>
                 </label>
@@ -35,7 +35,7 @@
                 <h2>Original</h2>
                 <a href="#" data-action="copy-metadata-text" class="copy-button"><i class="far fa-copy"></i></a>
             </div>
-            <div data-inscreen-content="metadata-text">Original text</div>
+            <div data-inscreen-content="metadata-text" class="original-text"></div>
             <div class="v-spacer"></div>
             <!-- Annotation -->
             <div class="flex-h-left">
@@ -51,6 +51,8 @@
                 <span data-inscreen-badge="new" class="badge badge-info">NEW</span>
                 <span data-inscreen-badge="changed" class="badge badge-warning">CHANGED</span>
                 <span data-inscreen-badge="interpolated" class="badge badge-dark">{ INTERPOLATED }</span>
+                <span data-inscreen-badge="missing" class="badge badge-danger">MISSING</span>
+                <span data-inscreen-badge="outdated" class="badge badge-warning">OUTDATED</span>
             </div>
             <div class="v-spacer"></div>
             <!-- HTML support -->
@@ -62,11 +64,11 @@
             </div>
             <div class="in-screen-metadata-badges">
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="html-support" id="html-support-1" value="1">
+                    <input data-inscreen-content="html-supported" class="form-check-input" type="radio" name="html-support" id="html-support-1" value="1">
                     <label class="form-check-label" for="html-support-1">Yes</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="html-support" id="html-support-0" value="0">
+                    <input data-inscreen-content="html-not-supported" class="form-check-input" type="radio" name="html-support" id="html-support-0" value="0">
                     <label class="form-check-label" for="html-support-0">Plain text only</label>
                 </div>
             </div>
@@ -94,14 +96,15 @@
                     px
                 </div>
             </div>
+            <!-- Interpolations -->
             <div data-inscreen-visibility="interpolated">
                 <div class="v-spacer"></div>
                 <div class="flex-h-left">
                     <h3>Interpolations</h3>
                 </div>
-                <div class="in-screen-metadata-badges">
+                <div data-inscreen-container="interpolations" class="in-screen-metadata-badges">
                 </div>
-                <template data-inscreen-template="interpolation-hint">
+                <template data-template="interpolation-hint">
                     <div class="form-inline">
                         <div class="form-group">
                             <label for="interpolation-X">XY =</label>
@@ -110,7 +113,6 @@
                     </div>
                 </template>
             </div>
-            <!-- Interpolations -->
             <div class="v-spacer"></div>
             <!-- Annotation -->
             <div class="flex-h-left">
@@ -118,6 +120,18 @@
                 <a href="#" data-action="copy-metadata-annotation" class="copy-button"><i class="far fa-copy"></i></a>
             </div>
             <textarea class="form-control textarea-autosize" data-inscreen-content="metadata-annotation" rows="1" placeholder="Enter an annotation (optional)"></textarea>
+            <div class="form-check ml-1">
+                <input data-inscreen-content="metadata-split" class="form-check-input" type="checkbox" value="" id="check-metadata-split">
+                <label class="form-check-label" style="margin-top:2px;" for="check-metadata-split">
+                    Split string <small>(please note part ids in <i>Annotation</i>)</small>
+                </label>
+            </div>
+            <div class="form-check ml-1">
+                <input data-inscreen-content="metadata-do-not-translate" class="form-check-input" type="checkbox" value="" id="check-metadata-do-not-translate">
+                <label class="form-check-label" style="margin-top:2px;" for="check-metadata-do-not-translate">
+                    This item should <b class="small">NOT</b> be translated
+                </label>
+            </div>
         </div>
         <div class="in-screen-footer">
             <div class="form-inline">

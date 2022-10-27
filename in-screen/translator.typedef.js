@@ -49,13 +49,15 @@
  *  key: string
  *  text: string
  *  hash: string
- *  annotation: string
- *  changed: boolean
  *  html: boolean|null
  *  'length-restricted': boolean|null
+ *  changed: boolean
+ *  new: boolean
+ *  translate: boolean
  *  interpolated: Number
  *  'interpolation-hints': InterpolationData[]
- *  new: boolean
+ *  annotation: string
+ *  split: boolean
  * }}
  */
 
@@ -66,6 +68,16 @@
  *  hint: string
  * }}
  */
+
+/**
+ * @typedef TranslatedString
+ * @type {{
+ *  text: string
+ *  isMatch: boolean
+ * }}
+ */
+
+
 
 /**
  * @typedef Generator

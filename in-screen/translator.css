@@ -65,6 +65,11 @@
     overflow: hidden;
 }
 
+#in-screen-translation-editor .original-text {
+    background-color: rgb(245, 245, 230);
+    padding: 0.3em;
+}
+
 
 #in-screen-translation-editor {
     padding: 0 !important;
