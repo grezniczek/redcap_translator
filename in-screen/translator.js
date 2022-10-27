@@ -1,7 +1,6 @@
 /**
  * REDCap Translation Assistant - In-screen Translation Magic
  */
-
 // @ts-check
 ;(function() {
 
@@ -496,6 +495,10 @@ function updateToggles(event) {
     }
 }
 
+/**
+ * 
+ * @param {boolean} state 
+ */
 function highlightTranslationStatus(state) {
     $('[data-inscreen-translation]').each(function() {
         const $this = $(this);
@@ -686,10 +689,20 @@ function updateTranslationDialog() {
 
 }
 
+/**
+ * 
+ * @param {string} key 
+ * @returns {StringMetadata}
+ */
 function getStringMetadata(key) {
     return config.metadata.strings[key] ?? null;
 }
 
+/**
+ * 
+ * @param {string} key 
+ * @returns {StringTranslation}
+ */
 function getStringTranslation(key) {
     if (!config.translation.strings.hasOwnProperty(key)) {
         config.translation.strings[key] = generateEmptyStringTranslation(key);
@@ -869,6 +882,11 @@ function decodeInvisiCode(encoded) {
     };
 }
 
+/**
+ * 
+ * @param {string} key 
+ * @returns {StringTranslation}
+ */
 function generateEmptyStringTranslation(key) {
     return {
         key: key,
@@ -878,15 +896,25 @@ function generateEmptyStringTranslation(key) {
     };
 }
 
+/**
+ * 
+ * @param {TranslationState} state 
+ * @returns {string}
+ */
 function getTranslationStatus(state) {
-    for(const key of ['translate', 'outdate', 'do-not-translate', 'translated']) {
+    for(const key of ['translate', 'outdated', 'do-not-translate', 'translated']) {
         if (state[key] == true) return key;
     }
     return 'translate';
 }
 
+/**
+ * 
+ * @param {JQuery<HTMLElement>} $el 
+ * @returns {string[]}
+ */
 function getTranslationKeys($el) {
-    const raw = $el.attr('data-inscreen-translation');
+    const raw = $el.attr('data-inscreen-translation') ?? '';
     const keyObj = JSON.parse(raw);
     const keys = {};
     // Extract keys
@@ -898,10 +926,18 @@ function getTranslationKeys($el) {
     return Object.keys(keys);
 }
 
+/**
+ * 
+ * @param {string} key 
+ */
 function addPageKey(key) {
     stringsInPage[key] = (stringsInPage[key] ?? 0) + 1;
 }
 
+/**
+ * 
+ * @param {string} key 
+ */
 function addScriptKey(key) {
     stringsInsideScript[key] = (stringsInsideScript[key] ?? 0) + 1;
     addPageKey(key);
