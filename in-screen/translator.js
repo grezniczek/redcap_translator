@@ -675,7 +675,26 @@ function currentItemChanged(event) {
 }
 
 function updateTranslationDialog() {
-    log('Setting dialog to translate:', currentString);
+    const metadata = getStringMetadata(currentString);
+    if (!metadata) {
+        warn('Cannot translate item \'' + currentString + '\'.');
+        return;
+    }
+    const translation = getStringTranslation(currentString);
+    log('Setting dialog to translate:', metadata, translation);
+
+
+}
+
+function getStringMetadata(key) {
+    return config.metadata.strings[key] ?? null;
+}
+
+function getStringTranslation(key) {
+    if (!config.translation.strings.hasOwnProperty(key)) {
+        config.translation.strings[key] = generateEmptyStringTranslation(key);
+    }
+    return config.translation.strings[key];
 }
 
 //#endregion
@@ -804,7 +823,6 @@ function keyPressed(event) {
                         toggleTranslation(items, $hover);
                     }
                 }
-
             }
         }
     }
