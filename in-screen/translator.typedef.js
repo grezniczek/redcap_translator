@@ -122,6 +122,16 @@
  * }}
  */
 
+/**
+ * @typedef TranslationState
+ * @type {{
+ *  translate: boolean
+ *  outdated: boolean
+ *  'do-not-translate': boolean
+ *  translated: boolean
+ * }}
+ */
+
 
 
 /**
