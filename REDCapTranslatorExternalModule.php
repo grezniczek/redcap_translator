@@ -456,7 +456,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             $new = false; // TODO - based on prev file
             $changed = false; // TODO - based on prev file
             $html = $this->contains_html($text); // TODO - or'ed with prev file - if unknown: null
+            $split = false; // TODO - or'ed with prev file.
             $length_restricted = null; // TODO - merge prev, null = unknown, 0 = unrestricted, n = restricted to n
+
             $interpolations = $this->get_interpolations($text);
             $entry = [
                 "key" => $key,
@@ -466,6 +468,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 "new" => $new,
                 "changed" => $changed,
                 "html" => $html,
+                "split" => $split,
                 "interpolated" => count($interpolations),
                 "interpolations-hints" => [],
                 "length-restricted" => $length_restricted,
