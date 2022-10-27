@@ -470,7 +470,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 "html" => $html,
                 "split" => $split,
                 "interpolated" => count($interpolations),
-                "interpolations-hints" => [],
+                "interpolation-hints" => [],
                 "length-restricted" => $length_restricted,
             ];
             foreach ($interpolations as $id => $hint) {
