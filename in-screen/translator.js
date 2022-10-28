@@ -434,6 +434,7 @@ function showInScreenTranslator() {
         $('[data-inscreen-toggle]').on('change', updateToggles);
         $dialog[0].scrollIntoView(false);
     }
+    updateTranslationDialog(currentString);
     log('In-Screen Translator dialog shown.', config.dialogPosition, $dialog.dialog('option'));
 }
 
@@ -678,32 +679,36 @@ function currentItemChanged(event) {
     currentString = ($stringSelector.val() ?? '').toString();
     log('Current item changed:', currentString);
     updateItemHighlight();
-    if (currentString != '') {
-        updateTranslationDialog();
-    }
+    updateTranslationDialog(currentString);
 }
 
-function updateTranslationDialog() {
-    const metadata = getStringMetadata(currentString);
+/**
+ * 
+ * @param {string} key 
+ */
+function updateTranslationDialog(key) {
+    const metadata = getStringMetadata(key);
     if (!metadata) {
-        warn('Cannot translate item \'' + currentString + '\'.');
-        return;
+        warn('Cannot translate item \'' + key + '\'.');
+        $dialog.find('[data-inscreen-visibility="no-item-selected"]').show();
+        $dialog.find('[data-inscreen-visibility="item-selected"]').hide();
+        return; 
     }
-    const translation = getStringTranslation(currentString);
+    const translation = getStringTranslation(key);
     log('Setting dialog to translate:', metadata, translation);
-    const translatedText = getTranslation(currentString);
+    const translatedText = getTranslation(key);
     // Translation pane
     $dialog.find('[data-inscreen-content="translation"]').val(translatedText.text);
     $dialog.find('[data-inscreen-content="do-not-translate"]').prop('checked', translation["do-not-translate"]);
     $dialog.find('[data-inscreen-content="metadata-text"]').text(metadata.text);
     $dialog.find('[data-inscreen-content="translation-annotation"]').val(translation.annotation);
-    $dialog.find('[data-inscreen-toggle="show-original"]').prop('checked', getShowOriginalState(currentString));
+    $dialog.find('[data-inscreen-toggle="show-original"]').prop('checked', getShowOriginalState(key));
     // Metadata pane
     // Badges
     $dialog.find('[data-inscreen-badge="new"]')[metadata.new == true ? 'show' : 'hide']();
     $dialog.find('[data-inscreen-badge="changed"]')[metadata.changed == true ? 'show' : 'hide']();
     $dialog.find('[data-inscreen-badge="interpolated"]')[metadata.interpolated > 0 ? 'show' : 'hide']();
-    $dialog.find('[data-inscreen-badge="missing"]')[metadata.translate && translatedText.text == '' ? 'show' : 'hide']();
+    $dialog.find('[data-inscreen-badge="untranslated"]')[metadata.translate && translatedText.text == '' ? 'show' : 'hide']();
     $dialog.find('[data-inscreen-badge="outdated"]')[translatedText.text != '' && !translatedText.isMatch ? 'show' : 'hide']();
     // HTML Support
     $dialog.find('[data-inscreen-content="html-supported"]').prop('checked', metadata.html === true);
@@ -728,6 +733,8 @@ function updateTranslationDialog() {
     $dialog.find('[data-inscreen-content="metadata-split"]').prop('checked', metadata.split);
     $dialog.find('[data-inscreen-content="metadata-do-not-translate"]').prop('checked', !metadata.translate);
     toggleMetadataResetLinks();
+    $dialog.find('[data-inscreen-visibility="no-item-selected"]').hide();
+    $dialog.find('[data-inscreen-visibility="item-selected"]').show();
 }
 
 function toggleMetadataResetLinks() {
@@ -902,6 +909,22 @@ function handleAction(event) {
             break;
         case 'save-changes':
             saveChanges();
+            break;
+        case 'copy-metadata-text':
+            // @ts-ignore base.js
+            copyTextToClipboard($('[data-inscreen-content="metadata-text"]').text());
+            break;
+        case 'copy-translation':
+            // @ts-ignore base.js
+            copyTextToClipboard($('[data-inscreen-content="translation"]').val());
+            break;
+        case 'copy-translation-annotation':
+            // @ts-ignore base.js
+            copyTextToClipboard($('[data-inscreen-content="translation-annotation"]').val());
+            break;
+        case 'copy-metadata-annotation':
+            // @ts-ignore base.js
+            copyTextToClipboard($('[data-inscreen-content="metadata-annotation"]').val());
             break;
         default: 
             log('Unknown action:', action);

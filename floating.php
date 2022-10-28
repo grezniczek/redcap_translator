@@ -10,7 +10,12 @@
                 <button data-action="save-changes" class="btn btn-xs btn-light"><i class="fas fa-save"></i> Save Changes</button>
             </div>
         </div>
-        <div class="in-screen-translation-items">
+        <div data-inscreen-visibility="no-item-selected" class="in-screen-no-item">
+            <p>
+                Please select an item to start translating!
+            </p>
+        </div>
+        <div data-inscreen-visibility="item-selected" class="in-screen-translation-items">
             <!-- Translation -->
             <div class="in-screen-translation-title">
                 <div class="flex-h-left">
@@ -44,14 +49,14 @@
             </div>
             <textarea class="form-control textarea-autosize" data-inscreen-content="translation-annotation" rows="1" placeholder="Enter an annotation (optional)"></textarea>
         </div>
-        <div class="in-screen-metadata-items">
+        <div data-inscreen-visibility="item-selected" class="in-screen-metadata-items">
             <h2>Metadata</h2>
             <!-- Info badges -->
             <div class="in-screen-metadata-badges">
                 <span data-inscreen-badge="new" class="badge badge-info">NEW</span>
                 <span data-inscreen-badge="changed" class="badge badge-warning">CHANGED</span>
                 <span data-inscreen-badge="interpolated" class="badge badge-dark">{ INTERPOLATED }</span>
-                <span data-inscreen-badge="missing" class="badge badge-danger">MISSING</span>
+                <span data-inscreen-badge="untranslated" class="badge badge-danger">UNTRANSLATED</span>
                 <span data-inscreen-badge="outdated" class="badge badge-warning">OUTDATED</span>
             </div>
             <div class="v-spacer"></div>

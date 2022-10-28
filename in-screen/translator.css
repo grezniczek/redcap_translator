@@ -98,6 +98,15 @@
     align-items: center;
 }
 
+.in-screen-no-item {
+    grid-area: 2 / 1 / 2 / 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-style: italic;
+}
+
 .in-screen-translation-items {
     grid-area: translation;
     padding: 0 10px;
