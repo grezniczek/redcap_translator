@@ -476,7 +476,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 "length-restricted" => $length_restricted,
             ];
             foreach ($interpolations as $id => $hint) {
-                $entry["interpolations-hints"][] = array(
+                $entry["interpolation-hints"][] = array(
                     "id" => "$id",
                     "hint" => $hint
                 );

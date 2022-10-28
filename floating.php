@@ -53,11 +53,11 @@
             <h2>Metadata</h2>
             <!-- Info badges -->
             <div class="in-screen-metadata-badges">
+                <span data-inscreen-badge="untranslated" class="badge badge-danger">UNTRANSLATED</span>
+                <span data-inscreen-badge="outdated" class="badge badge-warning">OUTDATED</span>
                 <span data-inscreen-badge="new" class="badge badge-info">NEW</span>
                 <span data-inscreen-badge="changed" class="badge badge-warning">CHANGED</span>
                 <span data-inscreen-badge="interpolated" class="badge badge-dark">{ INTERPOLATED }</span>
-                <span data-inscreen-badge="untranslated" class="badge badge-danger">UNTRANSLATED</span>
-                <span data-inscreen-badge="outdated" class="badge badge-warning">OUTDATED</span>
             </div>
             <div class="v-spacer"></div>
             <!-- HTML support -->
@@ -112,8 +112,8 @@
                 <template data-template="interpolation-hint">
                     <div class="form-inline">
                         <div class="form-group">
-                            <label for="interpolation-X">XY =</label>
-                            <input data-inscreen-content="interpolation-hint" data-inscreen-index="" type="text" class="form-control ml-2" id="interpolation-X">
+                            <label for=""></label>
+                            <textarea data-inscreen-content="interpolation-hint" data-inscreen-index="" class="form-control ml-2 textarea-autosize" rows="1" id=""></textarea>
                         </div>
                     </div>
                 </template>

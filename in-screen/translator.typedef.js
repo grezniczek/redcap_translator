@@ -18,6 +18,8 @@
  *  stringTerminator: string
  *  code0: string
  *  code1: string
+ *  codeRegex: RegExp
+ *  stringRegex: RegExp
  *  metadata: Metadata
  *  translation: Translation
  *  keys: string[]
@@ -76,6 +78,23 @@
  *  isMatch: boolean
  * }}
  */
+
+/**
+ * @typedef DialogData
+ * @type {{
+ *  translationText: string
+ *  translationDoNotTranslate: boolean
+ *  translationAnnotation: string
+ *  metadataHTMLSupport: boolean|null
+ *  metadataLengthRestricted: boolean|null
+ * metadataLengthRestrictedPx: string
+ * metadataAnnotation: string
+ * metadataSplit: boolean
+ * metadataDoNotTranslate: boolean
+ * metadataInterpolationHints: InterpolationData[]
+ * }}
+ */
+
 
 
 

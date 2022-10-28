@@ -78,7 +78,7 @@
 .in-screen-translation-container {
     display: grid;
     grid-template-rows: 45px 1fr 45px;
-    grid-template-columns: 1fr 250px;
+    grid-template-columns: 1fr 300px;
     grid-template-areas: 
         "header header"
         "translation metadata"
@@ -125,6 +125,7 @@
 .in-screen-metadata-badges {
     margin-left: 10px;
     display: flex;
+    flex-wrap: wrap;
     flex-direction: row;
     justify-content: start;
     align-items: center;

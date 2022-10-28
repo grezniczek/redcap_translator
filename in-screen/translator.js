@@ -479,7 +479,7 @@ function showInScreenTranslator() {
         width: config.dialogPosition.width,
         height: config.dialogPosition.height,
         minHeight: 480,
-        minWidth: 540,
+        minWidth: 600,
         position: [config.dialogPosition.left, config.dialogPosition.top],
         closeOnEscape: true,
         close: handleInScreenTranslatorClosed,
@@ -497,7 +497,7 @@ function showInScreenTranslator() {
         $('[data-inscreen-toggle]').on('change', updateToggles);
         $dialog[0].scrollIntoView(false);
         // Change tracking
-        $dialog.find('input[data-inscreen-content], textarea[data-inscreen-content]').on('change', dialogDataChanged);
+        $dialog.find('.in-screen-translation-items, .in-screen-metadata-items').on('change', dialogDataChanged);
     }
     setDialogData();
     log('In-Screen Translator dialog shown.', config.dialogPosition, $dialog.dialog('option'));
@@ -749,7 +749,6 @@ function currentItemChanged(event) {
 function setDialogData() {
     const metadata = getStringMetadata(currentString);
     if (!metadata) {
-        warn('Cannot translate item \'' + currentString + '\'.');
         currentHash = '';
         currentString = '';
     }
@@ -778,13 +777,19 @@ function setDialogData() {
         // TODO
         
         // Interpolations
-        $dialog.find('[data-inscreen-container="interpolations"]').html('');
-        for (const item of metadata["interpolation-hints"]) {
+        const $interpolations = $dialog.find('[data-inscreen-container="interpolations"]');
+        // Clear and add
+        $interpolations.html(''); 
+        let i = 0;
+        for (const row of metadata["interpolation-hints"]) {
+            i++;
+            const id = 'interpolation-hint_' + i;
             const $row = getTemplate('interpolation-hint');
-            log('TODO - add interpolation', item, $row);
+            $row.find('label').attr('for', id).text(row.id + ' =');
+            $row.find('[data-inscreen-content="interpolation-hint"]').attr('id', id).val(row.hint).attr('data-inscreen-index', row.id);
+            $interpolations.append($row);
         }
-        // TODO
-        
+        $interpolations.find('.textarea-autosize').textareaAutoSize();
         
         // Annotation
         $dialog.find('[data-inscreen-content="metadata-annotation"]').val(metadata.annotation);
@@ -806,7 +811,12 @@ function isDirty() {
     return currentHash != objectHash(getDialogData());
 }
 
+/**
+ * 
+ * @returns {DialogData}
+ */
 function getDialogData() {
+    /** @type {DialogData} */
     const data = {
         translationText: $('[data-inscreen-content="translation"]').val()?.toString() ?? '',
         translationDoNotTranslate: $('[data-inscreen-content="do-not-translate"]').prop('checked'),
@@ -819,8 +829,13 @@ function getDialogData() {
         metadataDoNotTranslate: $('[data-inscreen-content="metadata-do-not-translate"]').prop('checked'),
         metadataInterpolationHints: []
     };
-
-
+    $('textarea[data-inscreen-content="interpolation-hint"]').each(function() {
+        const $this = $(this);
+        data.metadataInterpolationHints.push({
+            id: $this.attr('data-inscreen-index') ?? '',
+            hint: ($this.val() ?? '').toString()
+        });
+    });
     return data;
 }
 
@@ -844,6 +859,7 @@ function updateDialog() {
         else {
             $saveButton.prop('disabled', true).addClass('btn-light').removeClass('btn-warning');
         }
+        $dialog.find('.textarea-autosize').trigger('input');
     }
 }
 
