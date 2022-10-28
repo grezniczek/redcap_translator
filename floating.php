@@ -81,17 +81,17 @@
             <!-- Length restriction -->
             <div class="flex-h-left">
                 <h3>Length Restriction</h3>
-                <div data-inscreen-visibility="length-restricted">
+                <div data-inscreen-visibility="length-restriction">
                     &nbsp;&mdash;<a href="#" data-action="reset-length-restricted" class="copy-button"><i class="fas fa-times"></i> Reset</a>
                 </div>
             </div>
             <div class="in-screen-metadata-badges">
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="length-restricted" id="length-restricted-0" value="0">
+                    <input data-inscreen-content="length-restricted-no" class="form-check-input" type="radio" name="length-restricted" id="length-restricted-0" value="0">
                     <label class="form-check-label" for="length-restricted-0">No</label>
                 </div>
                 <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="length-restricted" id="length-restricted-1" value="1">
+                    <input data-inscreen-content="length-restricted-yes" class="form-check-input" type="radio" name="length-restricted" id="length-restricted-1" value="1">
                     <label class="form-check-label" for="length-restricted-1">Yes</label>
                 </div>
                 <div data-inscreen-visibility="length-restricted">
@@ -113,7 +113,7 @@
                     <div class="form-inline">
                         <div class="form-group">
                             <label for="interpolation-X">XY =</label>
-                            <input type="text" class="form-control ml-2" id="interpolation-X" value="XY">
+                            <input data-inscreen-content="interpolation-hint" data-inscreen-index="" type="text" class="form-control ml-2" id="interpolation-X">
                         </div>
                     </div>
                 </template>
