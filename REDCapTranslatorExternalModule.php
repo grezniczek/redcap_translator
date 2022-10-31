@@ -224,7 +224,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $key = $payload["key"];
         $version = $payload["version"];
         $name = $payload["language"];
-        // Checks
+        #region Checks
         $metadata_file = $this->get_metadata_file($version);
         if (!$metadata_file) {
             return $this->error_response("Failed to locate metadata file for version '$version'.");
@@ -237,11 +237,12 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         if (!$translation_file) {
             return $this->error_response("Failed to locate translation file '$name'.");
         }
+        #endregion
         $strings = is_array($translation_file["strings"]) ? $translation_file["strings"] : [];
         $help_content = is_array($translation_file["help-content"]) ? $translation_file["help-content"] : [];
-        // Translation
+        #region Translation
         $text = $payload["translationText"];
-        $translation = [
+        $new = [
             "key" => $key,
             "do-not-translate" => $payload["translationDoNotTranslate"],
             "annotation" => $payload["translationAnnotation"],
@@ -249,21 +250,31 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
                 $string_metadata["hash"] => $text
             ]
         ];
-        if($text != "" || $translation["do-not-translate"] || $translation["annotation"] != "" || isset($translation_file) || isset($strings[$key])) {
+        $old = $strings[$key] ?? [
+            "key" => $key,
+            "do-not-translate" => false,
+            "annotation" => "",
+            "translations" => [
+                $string_metadata["hash"] => ""
+            ]
+        ];
+        if($new["translations"][$string_metadata["hash"]] != $old["translations"][$string_metadata["hash"]] || 
+           $new["do-not-translate"] != $old["do-not-translate"] || $new["annotation"] != $old["annotation"] || count($new["translations"]) != count($old["translations"])) {
             // Update translation
             // Merge existing (older) translations
-            foreach ($strings[$key]["translations"] as $this_hash => $this_text) {
+            foreach ($old["translations"] as $this_hash => $this_text) {
                 if ($this_hash != $string_metadata["hash"]) {
-                    $translation["translations"][$this_hash] = $this_text;
+                    $new["translations"][$this_hash] = $this_text;
                 }
             }
-            $strings[$key] = $translation;
-            $translation_file["strings"] = $strings;
+            $strings[$key] = $new;
             $translation_file["timestamp"] = $this->get_current_timestamp();
             $this->store_translation($translation_file, $strings, $help_content);
         }
-
-
+        #endregion
+        #region Metadata
+        
+        #endregion
         return $this->error_response("Not implemented yet.");
     }
 
