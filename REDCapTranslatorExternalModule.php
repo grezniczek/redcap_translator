@@ -221,8 +221,50 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
 
     private function ajax_save_changes($payload, $user_id) {
+        $key = $payload["key"];
+        $version = $payload["version"];
+        $name = $payload["language"];
+        // Checks
+        $metadata_file = $this->get_metadata_file($version);
+        if (!$metadata_file) {
+            return $this->error_response("Failed to locate metadata file for version '$version'.");
+        }
+        $string_metadata = $metadata_file["strings"][$key] ?? null;
+        if (!$string_metadata) {
+            return $this->error_response("Language string '$key' does not exist in metadata file '$version'.");
+        }
+        $translation_file = $this->get_translation($name);
+        if (!$translation_file) {
+            return $this->error_response("Failed to locate translation file '$name'.");
+        }
+        $strings = is_array($translation_file["strings"]) ? $translation_file["strings"] : [];
+        $help_content = is_array($translation_file["help-content"]) ? $translation_file["help-content"] : [];
+        // Translation
+        $text = $payload["translationText"];
+        $translation = [
+            "key" => $key,
+            "do-not-translate" => $payload["translationDoNotTranslate"],
+            "annotation" => $payload["translationAnnotation"],
+            "translations" => [
+                $string_metadata["hash"] => $text
+            ]
+        ];
+        if($text != "" || $translation["do-not-translate"] || $translation["annotation"] != "" || isset($translation_file) || isset($strings[$key])) {
+            // Update translation
+            // Merge existing (older) translations
+            foreach ($strings[$key]["translations"] as $this_hash => $this_text) {
+                if ($this_hash != $string_metadata["hash"]) {
+                    $translation["translations"][$this_hash] = $this_text;
+                }
+            }
+            $strings[$key] = $translation;
+            $translation_file["strings"] = $strings;
+            $translation_file["timestamp"] = $this->get_current_timestamp();
+            $this->store_translation($translation_file, $strings, $help_content);
+        }
+
+
         return $this->error_response("Not implemented yet.");
-        // TODO
     }
 
     #endregion
