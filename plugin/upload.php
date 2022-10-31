@@ -96,7 +96,7 @@ class REDCapTranslatorFileUploader {
         return [
             "success" => true,
             "filename" => "$name.json",
-            "json" => json_encode($json, JSON_PRETTY_PRINT)
+            "json" => json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         ];
     }
 
@@ -303,7 +303,7 @@ class REDCapTranslatorFileUploader {
 }
 // Upload
 try {
-    print json_encode(REDCapTranslatorFileUploader::upload($module));
+    print json_encode(REDCapTranslatorFileUploader::upload($module), JSON_UNESCAPED_UNICODE);
 }
 catch (\Throwable $t) {
     print json_encode(array(

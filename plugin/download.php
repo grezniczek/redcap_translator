@@ -125,7 +125,7 @@ class Downloader {
         if ($mode == "translation-get-json") {
             header('Content-Type: application/json; name="'.$translation["filename"].'"');
             header('Content-Disposition: attachment; filename="'.$translation["filename"].'"');
-            print json_encode($translation, JSON_PRETTY_PRINT);
+            print json_encode($translation, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             exit;
         }
         if ($mode == "translation-get-ini") {

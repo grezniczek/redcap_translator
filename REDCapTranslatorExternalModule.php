@@ -375,7 +375,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             "stringTerminator" => self::STRING_TERMINATOR,
             "dialogPosition" => $this->get_dialog_coordinates(),
         );
-        $json = json_encode($settings, JSON_FORCE_OBJECT);
+        $json = json_encode($settings, JSON_FORCE_OBJECT | JSON_UNESCAPED_UNICODE);
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
         require dirname(__FILE__)."/toasts.php";
         require dirname(__FILE__)."/floating.php";
