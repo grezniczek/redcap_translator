@@ -122,6 +122,11 @@ function init(data) {
         // Main elements
         $stringSelector = $dialog.find('[data-translator-item="current-key"]');
         $saveButton = $dialog.find('[data-action="save-changes"]');
+        // Useability improvement: Take away focus from input elements to force update of save button state
+        // Need to add to parent because disabled elements won't trigger
+        $saveButton.parent().on('pointerenter', () => {
+            $(':focus').trigger('blur');
+        });
         $codeButton = $dialog.find('[data-action="view-code"]');
         $saveCloak = $dialog.find('.in-screen-saving-cloak');
         $saveCloak.hide();
@@ -437,6 +442,10 @@ function preparePageForTranslation() {
     log('Script strings:', stringsInsideScript);
     filterItems();
     if (!config.codeLens) $codeButton.hide();
+    // Inject translations
+    for (const key of Object.keys(stringsInPage)) {
+        setShowOriginalState(key, showOriginalCache[key] ?? false);
+    }
     updateProgressModal('Translation setup has completed.');
     showInScreenTranslator();
 }
@@ -513,6 +522,7 @@ function showInScreenTranslator() {
         $dialog[0].scrollIntoView(false);
         // Change tracking
         $dialog.find('.in-screen-translation-items, .in-screen-metadata-items').on('change', dialogDataChanged);
+        $dialog.find('textarea[data-inscreen-content], input[data-inscreen-content]').on('blur', dialogDataChanged);
     }
     setDialogData();
     log('In-Screen Translator dialog shown.', config.dialogPosition, $dialog.dialog('option'));
@@ -789,8 +799,11 @@ function setDialogData() {
         $dialog.find('[data-inscreen-content="html-supported"]').prop('checked', metadata.html === true);
         $dialog.find('[data-inscreen-content="html-not-supported"]').prop('checked', metadata.html === false);
         // Length Restriction
-        // TODO
-        
+        $dialog.find('[data-inscreen-content="length-restricted-no"]').prop('checked', metadata["length-restricted"] === false);
+        $dialog.find('[data-inscreen-content="length-restricted-yes"]').prop('checked', metadata["length-restricted"] !== false && metadata["length-restricted"] !== null);
+        if (metadata["length-restricted"]) {
+            $dialog.find('[data-inscreen-content="length-restricted-px"]').val(metadata["length-restricted"]);
+        }
         // Interpolations
         const $interpolations = $dialog.find('[data-inscreen-container="interpolations"]');
         // Clear and add
@@ -876,6 +889,9 @@ function updateDialog() {
         $dialog.find('[data-inscreen-visibility="item-selected"]').show();
 
         $dialog.find('[data-inscreen-visibility="html-support"]')[data.metadataHTMLSupport === null ? 'hide' : 'show']();
+        $dialog.find('[data-inscreen-visibility="length-restricted"]')[data.metadataLengthRestricted === true ? 'show' : 'hide']();
+        $dialog.find('[data-inscreen-visibility="length-restriction"]')[data.metadataLengthRestricted === null ? 'hide' : 'show']();
+
         $dialog.find('[data-inscreen-visibility="interpolated"]')[metadata.interpolated > 0 ? 'show' : 'hide']();
         // Save button state
         setSaveButtonState(isDirty());
@@ -920,10 +936,24 @@ function setShowOriginalState(key, showOriginal) {
     if (!config.metadata.strings.hasOwnProperty(key)) return;
     log('Showing ' + (showOriginal ? 'original' : 'translation') + ' of item ' + key);
     showOriginalCache[key] = showOriginal;
-    const text = showOriginal ? getOriginal(key) : getTranslation(key).text;
-    if (text != '') {
-        $('.in-screen-id-' + key).html(text);
-    }
+    let text = showOriginal ? getOriginal(key) : getTranslation(key).text;
+    if (text == '') return;
+    const meta = config.metadata.strings[key];
+    // Update each item
+    $('.in-screen-id-' + key).each(function() {
+        const $this = $(this);
+        if (meta.interpolated > 0) {
+            // This item is interpolated. It should have a parent with data-rc-lang-values
+            const $parents = $this.parents('[data-rc-lang-values]');
+            if ($parents.length) {
+                const encodedVals = atob($parents.first().attr('data-rc-lang-values')?.toString() ?? '');
+                const vals = encodedVals == '' ? {} : JSON.parse(encodedVals);
+                // @ts-ignore base.js
+                text = interpolateString(text, vals);
+            }
+        }
+        $this.html(text);
+    });
 }
 
 
@@ -993,9 +1023,12 @@ function saveChanges() {
     JSMO.ajax('save-changes', data)
     .then(response => {
         if (response.success) {
+            // Update item
+            config.translation.strings[currentString] = response.updated;
             // Update hash
             currentHash = newHash;
             setSaveButtonState(false);
+            setShowOriginalState(currentString, $('[data-inscreen-toggle="show-original"]').prop('checked'));
         }
         else {
             showError('Failed to save changes.', response.error);

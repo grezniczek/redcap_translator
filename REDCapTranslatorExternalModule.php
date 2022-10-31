@@ -282,7 +282,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             $updated = [
                 "html" => $payload["metadataHTMLSupport"],
                 "split" => $payload["metadataSplit"],
-                "translate" => $payload["metadataDoNotTranslate"],
+                "translate" => $payload["metadataDoNotTranslate"] !== true,
                 "annotation" => $payload["metadataAnnotation"],
                 "length-restricted" => $payload["metadataLengthRestricted"] === null ? null : ($payload["metadataLengthRestricted"] === false ? false : $payload["metadataLengthRestrictedPx"]),
                 "interpolation-hints" => $payload["metadataInterpolationHints"]
@@ -311,7 +311,9 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             return $this->error_response("Failed to store metadata: " . $ex->getMessage());
         }
         #endregion
-        return $this->success_response();
+        return $this->success_response([
+            "updated" => $new
+        ]);
     }
 
     #endregion

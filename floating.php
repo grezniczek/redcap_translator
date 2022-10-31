@@ -138,6 +138,7 @@
                     This item should <b class="small">NOT</b> be translated
                 </label>
             </div>
+            <div class="v-spacer"></div>
         </div>
         <div class="in-screen-footer">
             <div class="form-inline">
