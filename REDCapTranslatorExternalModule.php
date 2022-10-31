@@ -304,6 +304,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
             if (!$identical) {
                 // Store
                 $metadata_file["strings"][$key] = $string_metadata;
+                $metadata_file["timestamp"] = $this->get_current_timestamp();
                 $this->store_metadata_file($metadata_file);
             }
         }
@@ -351,6 +352,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         if (!isset($translation["timestamp"])) $translation["timestamp"] = "(???)";
         $stored[$translation["name"]] = $translation;
         $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_NAME, $stored);
+        if (is_array($strings)) ksort($strings, SORT_NATURAL);
         $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_STRINGS_PREFIX.$translation["name"], $strings);
         $this->setSystemSetting(REDCapTranslatorExternalModule::TRANSLATIONS_SETTING_HELP_PREFIX.$translation["name"], $help_content);
         $this->log("$verb translation file '{$translation["name"]}' ({$translation["filename"]}).");
@@ -850,8 +852,14 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $result;
     }
 
-    public function strings_to_ini($strings, $header = "") {
-        $lines = empty($header) ? [] : ["$header"];
+    public function strings_to_ini($strings, $header = []) {
+        if (is_string($header)) {
+            $lines = empty($header) ? [] : ["$header"];
+        }
+        else {
+            $lines = $header;
+        }
+        ksort($strings, SORT_NATURAL);
         foreach ($strings as $key => $text) {
             $lines[] = $key . ' = "' . $this->convert_ini_whitespace($text) . '"';
         }

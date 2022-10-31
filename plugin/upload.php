@@ -78,20 +78,25 @@ class REDCapTranslatorFileUploader {
                 ]
             ],
             "url" => "",
-            "strings" => count($mlm["uiTranslations"]) ? [] : new \stdClass,
+            "strings" => new \stdClass,
             "annotations" => new \stdClass
         ];
-        foreach ($mlm["uiTranslations"] as $item) {
-            if (isset($item["id"]) && !starts_with($item["id"], "_valtype_") && isset($item["translation"])) {
-                $json["strings"][$item["id"]] = [
-                    "key" => $item["id"],
-                    "do-not-translate" => false,
-                    "annotation" => "",
-                    "translations" => [
-                        ($item["hash"] ?? "") => $item["translation"]
-                    ]
-                ];
+        if (count($mlm["uiTranslations"])) {
+            $strings = [];
+            foreach ($mlm["uiTranslations"] as $item) {
+                if (isset($item["id"]) && !starts_with($item["id"], "_valtype_") && isset($item["translation"])) {
+                    $strings[$item["id"]] = [
+                        "key" => $item["id"],
+                        "do-not-translate" => false,
+                        "annotation" => "",
+                        "translations" => [
+                            ($item["hash"] ?? "") => $item["translation"]
+                        ]
+                    ];
+                }
             }
+            ksort($strings, SORT_NATURAL);
+            $json["strings"] = $strings;
         }
         return [
             "success" => true,
@@ -134,23 +139,28 @@ class REDCapTranslatorFileUploader {
                 ]
             ],
             "url" => "",
-            "strings" => count($ini) ? [] : new \stdClass,
+            "strings" => new \stdClass,
             "annotations" => new \stdClass
         ];
-        foreach ($ini as $key => $text) {
-            $json["strings"][$key] = [
-                "key" => $key,
-                "do-not-translate" => null,
-                "annotation" => "",
-                "translations" => [
-                    "" => str_replace([
-                            REDCapTranslatorExternalModule::CODE_START_ENCODING,
-                            REDCapTranslatorExternalModule::CODE_ZERO_ENCODING,
-                            REDCapTranslatorExternalModule::CODE_ONE_ENCODING,
-                            REDCapTranslatorExternalModule::STRING_TERMINATOR
-                        ], "", $text)
-                ]
-            ];
+        if (count($ini)) {
+            $strings = [];
+            foreach ($ini as $key => $text) {
+                $strings[$key] = [
+                    "key" => $key,
+                    "do-not-translate" => null,
+                    "annotation" => "",
+                    "translations" => [
+                        "" => str_replace([
+                                REDCapTranslatorExternalModule::CODE_START_ENCODING,
+                                REDCapTranslatorExternalModule::CODE_ZERO_ENCODING,
+                                REDCapTranslatorExternalModule::CODE_ONE_ENCODING,
+                                REDCapTranslatorExternalModule::STRING_TERMINATOR
+                            ], "", $text)
+                    ]
+                ];
+            }
+            ksort($strings, SORT_NATURAL);
+            $json["strings"] = $strings;
         }
         return [
             "success" => true,
