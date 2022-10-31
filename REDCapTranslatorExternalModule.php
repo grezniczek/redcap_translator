@@ -80,6 +80,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     #region AJAX Handlers
 
+    /**
+     * Generates an AJAX response array with an error
+     * @param string $error 
+     * @return array 
+     */
     private function error_response($error) {
         return [
             "success" => false,
@@ -87,6 +92,11 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         ];
     }
 
+    /**
+     * Generates an AJAX response array in case of success
+     * @param array $payload Associative array with response data (optional)
+     * @return array 
+     */
     private function success_response($payload = null) {
         if ($payload) {
             $payload["success"] = true;
