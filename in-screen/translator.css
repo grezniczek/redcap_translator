@@ -107,6 +107,18 @@
     font-style: italic;
 }
 
+.in-screen-saving-cloak {
+    grid-area: 1 / 1 / 4 / 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: white;
+    opacity: 0.9;
+    z-index: 1000;
+}
+
 .in-screen-translation-items {
     grid-area: translation;
     padding: 0 10px;

@@ -66,157 +66,153 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
     }
     
     function redcap_module_ajax($action, $payload, $project_id, $record, $instrument, $event_id, $repeat_instance, $survey_hash, $response_id, $survey_queue_hash, $page, $page_full, $user_id, $group_id) {
-        switch($action) {
-            case "create-new-translation":
-                $error = $this->validateCreateNewLang($payload);
-                if (empty($error)) {
-                    $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
-                    if (isset($store[$payload["name"]])) {
-                        $error = "A language named '{$payload["name"]}' already exists.";
-                    }
-                    else {
-                        unset($payload["strings"]);
-                        $payload["coverage"] = "TBD";
-                        $payload["timestamp"] = $this->get_current_timestamp();
-                        $payload["filename"] = $payload["name"].".json";
-                        $store[$payload["name"]] = $payload;
-                        $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
-
-                        return [
-                            "success" => true,
-                            "data" => $payload
-                        ];
-                    }
-                }
-                return [
-                    "success" => false,
-                    "error" => $error
-                ];
-                break;
-            case "translation-delete": 
-                $name = $payload;
-                $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
-                if (array_key_exists($name, $store)) {
-                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, null);
-                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_HELP_PREFIX.$name, null);
-                    unset($store[$name]);
-                    $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
-                    $this->log("Deleted language '{$name}'.");
-                    return [
-                        "success" => true,
-                    ];
-                }
-                else {
-                    return [
-                        "success" => false,
-                        "error" => "This language does not exist on the server."
-                    ];
-                }
-                break;
-            case "metadata-delete": 
-                $version = $payload;
-                $this->delete_metadata_file($version);
-                return [
-                    "success" => true,
-                ];
-                break;
-            case "package-delete":
-                $version = $payload;
-                $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
-                if (array_key_exists($version, $store)) {
-                    $doc_id = $store[$version];
-                    $this->log("Deleted package version $version (doc_id = $doc_id).");
-                    \Files::deleteFileByDocId($doc_id);
-                    unset($store[$version]);
-                    $this->setSystemSetting(self::PACKAGES_SETTING_NAME, $store);
-                    return [
-                        "success" => true,
-                    ];
-                }
-                else {
-                    return [
-                        "success" => false,
-                        "error" => "This version does not exist on the server."
-                    ];
-                }
-                break;
-            case "package-get-zip":
-                $version = $payload;
-                $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
-                if (array_key_exists($version, $store)) {
-                    $doc_id = $store[$version];
-                    $doc_hash = \Files::docIdHash($doc_id);
-                    $url = APP_PATH_WEBROOT . "DataEntry/file_download.php?doc_id_hash=$doc_hash";
-                    return [
-                        "success" => true,
-                        "url" => $url
-                    ];
-                }
-                else {
-                    return [
-                        "success" => false,
-                        "error" => "This version does not exist on the server."
-                    ];
-                }
-                break;
-            case "settings-update":
-                $error = $this->update_setting($payload["setting"] ?? "", $payload["value"] ?? null);
-                return [
-                    "success" => empty($error),
-                    "error" => $error,
-                ];
-                break;
-            case "load-translation-data":
-                // No user? Check password
-                $password = $payload["password"] ?? "";
-                $name = $payload["name"] ?? "";
-                $based_on = $payload["basedOn"] ?? "";
-                if ($user_id == null && $password !== $this->get_password()) {
-                    return [
-                        "success" => false,
-                        "error" => "Invalid password."
-                    ];
-                }
-                // Valid translation and metadata reference?
-                if (!$this->validate_translation_metadata($name, $based_on)) {
-                    return [
-                        "success" => false,
-                        "error" => "Cannot translate '$name' based on '$based_on'. Verify that both items, translation and metadata file exist."
-                    ];
-                }
-                // Is an appropriate in-screen translation file loaded?
-                $ini_version = $GLOBALS["lang"]["redcap_translation_assistant_version"] ?? "";
-                $ini_keys = $GLOBALS["lang"]["redcap_translation_assistant_keys"] ?? "";
-                if ($ini_keys == "") {
-                    return [
-                        "success" => false,
-                        "error" => "In order to use in-screen translation, a matching in-screen translation file must be set as REDCap's langauge file (system and project context)."
-                    ];
-                }
-                if ($ini_version != $based_on) {
-                    return [
-                        "success" => false,
-                        "error" => "The in-screen translation INI's version ($ini_version) does not match the version of the metadata file ($based_on)."
-                    ];
-                }
-                $data = $this->get_translation_data($name, $based_on, $ini_keys);
-                return [
-                    "success" => true,
-                    "data" => $data
-                ];
-                break;
-            case 'set-dialog-coordinates':
-                $this->set_dialog_coordinates($payload);
-                return [
-                    "success" => true
-                ];
-                break;
-            default:
-                return [
-                    "success" => false,
-                    "error" => "Invalid action '$action'."
-                ];
+        // Generate method name and exectue if availabe
+        $method = "ajax_" . str_replace("-", "_", $action);
+        if (method_exists($this, $method)) {
+            return $this->$method($payload, $user_id);
         }
+        else {
+            return $this->error_response("Invalid action '$action'.");
+        }
+    }
+
+    #endregion
+
+    #region AJAX Handlers
+
+    private function error_response($error) {
+        return [
+            "success" => false,
+            "error" => $error
+        ];
+    }
+
+    private function success_response($payload = null) {
+        if ($payload) {
+            $payload["success"] = true;
+        }
+        else {
+            $payload = [
+                "success" => true
+            ];
+        }
+        return $payload;
+    }
+
+
+    private function ajax_load_translation_data($payload, $user_id) {
+        // No user? Check password
+        $password = $payload["password"] ?? "";
+        $name = $payload["name"] ?? "";
+        $based_on = $payload["basedOn"] ?? "";
+        if ($user_id == null && $password !== $this->get_password()) {
+            return $this->error_response("Invalid password.");
+        }
+        // Valid translation and metadata reference?
+        if (!$this->validate_translation_metadata($name, $based_on)) {
+            return $this->error_response("Cannot translate '$name' based on '$based_on'. Verify that both items, translation and metadata file exist.");
+        }
+        // Is an appropriate in-screen translation file loaded?
+        $ini_version = $GLOBALS["lang"]["redcap_translation_assistant_version"] ?? "";
+        $ini_key = $GLOBALS["lang"]["redcap_translation_assistant_keys"] ?? "";
+        if ($ini_key == "") {
+            return $this->error_response("In order to use in-screen translation, a matching in-screen translation file must be set as REDCap's langauge file (system and project context).");
+        }
+        if ($ini_version != $based_on) {
+            return $this->error_response("The in-screen translation INI's version ($ini_version) does not match the version of the metadata file ($based_on).");
+        }
+        $data = $this->get_translation_data($name, $based_on, $ini_key);
+        $datafile_info = $this->get_metadata_files()[$based_on];
+        return $this->success_response([
+            "data" => $data,
+            "codeLense" => $datafile_info["code"]
+        ]);
+    }
+
+    private function ajax_settings_update($payload, $user_id) {
+        $error = $this->update_setting($payload["setting"] ?? "", $payload["value"] ?? null);
+        return (empty($error)) ? $this->success_response() : $this->error_response($error);
+    }
+
+    private function ajax_package_get_zip($payload, $user_id) {
+        $version = $payload;
+        $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
+        if (array_key_exists($version, $store)) {
+            $doc_id = $store[$version];
+            $doc_hash = \Files::docIdHash($doc_id);
+            return $this->success_response([
+                "url" => APP_PATH_WEBROOT . "DataEntry/file_download.php?doc_id_hash=$doc_hash"
+            ]);
+        }
+        return $this->error_response("This version does not exist on the server.");
+    }
+
+    private function ajax_package_delete($payload, $user_id) {
+        $version = $payload;
+        $store = $this->getSystemSetting(self::PACKAGES_SETTING_NAME) ?? [];
+        if (array_key_exists($version, $store)) {
+            $doc_id = $store[$version];
+            $this->log("Deleted package version $version (doc_id = $doc_id).");
+            \Files::deleteFileByDocId($doc_id);
+            unset($store[$version]);
+            $this->setSystemSetting(self::PACKAGES_SETTING_NAME, $store);
+            return $this->success_response();
+        }
+        return $this->error_response("This version does not exist on the server.");
+    }
+
+    private function ajax_metadata_delete($payload, $user_id) {
+        $version = $payload;
+        $this->delete_metadata_file($version);
+        return $this->success_response();
+    }
+
+    private function ajax_translation_delete($payload, $user_id) {
+        $name = $payload;
+        $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
+        if (array_key_exists($name, $store)) {
+            $this->setSystemSetting(self::TRANSLATIONS_SETTING_STRINGS_PREFIX.$name, null);
+            $this->setSystemSetting(self::TRANSLATIONS_SETTING_HELP_PREFIX.$name, null);
+            unset($store[$name]);
+            $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
+            $this->log("Deleted language '{$name}'.");
+            return $this->success_response();
+        }
+        else {
+            return $this->error_response("This language does not exist on the server.");
+        }
+    }
+
+    private function ajax_create_new_translation($payload, $user_id) {
+        $error = $this->validateCreateNewLang($payload);
+        if (empty($error)) {
+            $store = $this->getSystemSetting(self::TRANSLATIONS_SETTING_NAME) ?? [];
+            if (isset($store[$payload["name"]])) {
+                $error = "A language named '{$payload["name"]}' already exists.";
+            }
+            else {
+                unset($payload["strings"]);
+                $payload["coverage"] = "TBD";
+                $payload["timestamp"] = $this->get_current_timestamp();
+                $payload["filename"] = $payload["name"].".json";
+                $store[$payload["name"]] = $payload;
+                $this->setSystemSetting(self::TRANSLATIONS_SETTING_NAME, $store);
+                return $this->success_response([
+                    "data" => $payload
+                ]);
+            }
+        }
+        return $this->error_response($error);
+    }
+
+    private function ajax_set_dialog_coordinates($payload, $user_id) {
+        $this->set_dialog_coordinates($payload);
+        return $this->success_response();
+    }
+
+    private function ajax_save_changes($payload, $user_id) {
+        return $this->error_response("Not implemented yet.");
+        // TODO
     }
 
     #endregion
@@ -358,6 +354,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         // Prepare initialization object
         $settings = array(
             "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
+            "codeLens" => $this->canUseCodeLens(),
             "auth" => defined("USERID"),
             "jsmoName" => $this->getJavascriptModuleObjectName(),
             "name" => $current_translation["name"],
@@ -389,6 +386,10 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     private function set_dialog_coordinates($coords) {
         $this->setSystemSetting(self::DIALOG_COORDINATES_SETTING_NAME, $coords);
+    }
+
+    private function canUseCodeLens() {
+        return defined("SUPER_USER") && SUPER_USER == "1";
     }
 
     #endregion

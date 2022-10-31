@@ -38,6 +38,8 @@ var translationInitializing = false;
 var $dialog = null;
 var $stringSelector = $('<select></select>');
 var $saveButton = $('<button></button>');
+var $codeButton = $('<button></button>');
+var $saveCloak;
 
 var stringsInsideScript = {};
 var stringsInPage = {};
@@ -120,6 +122,9 @@ function init(data) {
         // Main elements
         $stringSelector = $dialog.find('[data-translator-item="current-key"]');
         $saveButton = $dialog.find('[data-action="save-changes"]');
+        $codeButton = $dialog.find('[data-action="view-code"]');
+        $saveCloak = $dialog.find('.in-screen-saving-cloak');
+        $saveCloak.hide();
         log('Initialized.', config);
         // Autostart
         if (config.auth && autostart) {
@@ -160,6 +165,7 @@ function setupTranslation(password = '') {
             config.metadata = response.data.metadata;
             config.translation = response.data.translation;
             config.keys = response.data.keys; 
+            config.codeLens = config.codeLens && response.codeLens;
             log('Translation, metadata, and keys loaded.', config);
             updateProgressModal('Preparing page for translation ...', 5);
             preparePageForTranslation();
@@ -174,8 +180,7 @@ function setupTranslation(password = '') {
     })
     .finally(function() {
         if (errorMsg != '') {
-            showToast('#translator-errorToast', 'Failed to load translation data. See console for details.');
-            error('Failed to load translation data:', errorMsg);
+            showError('Failed to load translation data.', errorMsg);
         }
         translationInitializing = false;
         setTimeout(() => {
@@ -289,7 +294,6 @@ function processElement(el, counter, reprocess = false) {
                 const code = text.substring(start + 1, start + 17);
                 const decoded = decodeInvisiCode(code);
                 const key = config.keys[decoded.int];
-// if (key == 'multilang_335') debugger;
                 const partialEnd = text.indexOf(config.stringTerminator);
                 const keys = [key];
                 const end = findEnd(text, start, keys); // text.indexOf(config.stringTerminator, start + 17);
@@ -419,9 +423,8 @@ function preparePageForTranslation() {
     const nProcessed = processElement(document.body, i);
     log('Elements processed: ' + nProcessed);
     log('Script strings:', stringsInsideScript);
-
     filterItems();
-
+    if (!config.codeLens) $codeButton.hide();
     updateProgressModal('Translation setup has completed.');
     showInScreenTranslator();
 }
@@ -532,8 +535,7 @@ function saveInScreenTranslatorCoords(event, ui) {
         }
     })
     .catch(function(err) {
-        showToast('#translator-errorToast', 'Failed to store dialog coordinates. See console for details.');
-        error('Failed to store dialog coordinates:', err);
+        showError('Failed to store dialog coordinates.', err);
     });
 }
 
@@ -744,6 +746,7 @@ function currentItemChanged(event) {
     currentString = ($stringSelector.val() ?? '').toString();
     setDialogData();
     updateItemHighlight();
+    $codeButton.prop('disabled', currentString == '');
 }
 
 function setDialogData() {
@@ -843,6 +846,7 @@ function updateDialog() {
     if (currentString == '') {
         $dialog.find('[data-inscreen-visibility="no-item-selected"]').show();
         $dialog.find('[data-inscreen-visibility="item-selected"]').hide();
+        setSaveButtonState(false);
     }
     else {
         const data = getDialogData();
@@ -853,13 +857,21 @@ function updateDialog() {
         $dialog.find('[data-inscreen-visibility="html-support"]')[data.metadataHTMLSupport === null ? 'hide' : 'show']();
         $dialog.find('[data-inscreen-visibility="interpolated"]')[metadata.interpolated > 0 ? 'show' : 'hide']();
         // Save button state
-        if (isDirty()) {
-            $saveButton.prop('disabled', false).addClass('btn-warning').removeClass('btn-light');
-        }
-        else {
-            $saveButton.prop('disabled', true).addClass('btn-light').removeClass('btn-warning');
-        }
+        setSaveButtonState(isDirty());
         $dialog.find('.textarea-autosize').trigger('input');
+    }
+}
+
+/**
+ * Sets the state of the Save Changes button
+ * @param {boolean} stuffToSave 
+ */
+function setSaveButtonState(stuffToSave) {
+    if (stuffToSave) {
+        $saveButton.prop('disabled', false).addClass('btn-warning').removeClass('btn-light');
+    }
+    else {
+        $saveButton.prop('disabled', true).addClass('btn-light').removeClass('btn-warning');
     }
 }
 
@@ -949,10 +961,30 @@ function getStringTranslation(key) {
 }
 
 function saveChanges() {
-    log('Saving changes');
+    if (currentString == '') return;
+    $saveCloak.show();
+    const data = getDialogData();
+    data['key'] = currentString;
+    data['version'] = config.basedOn;
+    data['language'] = config.name;
+    log('Saving changes for \'' + currentString + '\'', data);
+    JSMO.ajax('save-changes', data)
+    .then(response => {
+        if (response.success) {
 
-    // TODO
+        }
+        else {
+            showError('Failed to save changes.', response.error);
+        }
+    })
+    .catch(err => {
+        showError('Failed to save changes.', err);
+    })
+    .finally(() => {
+        $saveCloak.hide();
+    });
 }
+
 
 //#endregion
 
@@ -1002,6 +1034,16 @@ function matchFilter(key) {
 
     // TODO apply filter
     return key.substring(0, 1) == 'b';
+}
+
+//#endregion
+
+//#region Code Lens
+
+function displayCode(key) {
+    warn('CodeLens - Not implemented yet.', key);
+
+    // Display a new tab with code view - if multiple locations, show a menu only (without preloading the first file).
 }
 
 //#endregion
@@ -1057,6 +1099,11 @@ function handleAction(event) {
             $dialog.find('[data-inscreen-content="length-restricted-no"]').prop('checked', false);
             $dialog.find('[data-inscreen-content="length-restricted-yes"]').prop('checked', false);
             $dialog.find('[data-inscreen-content="length-restricted-px"]').val('').trigger('change');
+            break;
+        case 'view-code':
+            if (currentString != '') {
+                displayCode(currentString)
+            }
             break;
         default: 
             log('Unknown action:', action);
@@ -1240,7 +1287,7 @@ function addScriptKey(key) {
  * @param {string} name 
  * @returns {JavascriptModuleObject}
  */
- function resolveJSMO(name) {
+function resolveJSMO(name) {
     const parts = name.split('.');
     let jsmo;
     jsmo = window;
@@ -1248,6 +1295,22 @@ function addScriptKey(key) {
         jsmo = jsmo[part];
     }
     return jsmo;
+}
+
+/**
+ * Reports an error (as toast and to the console)
+ * @param {string} text 
+ * @param {any} details 
+ */
+function showError(text, details = null) {
+    if (details == null) {
+        showToast('#translator-errorToast', text);
+        error(text);
+    }
+    else {
+        showToast('#translator-errorToast', text + ' See console for details.');
+        error(text + ' Details:', details);
+    }
 }
 
 /**

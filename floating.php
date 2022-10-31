@@ -5,6 +5,7 @@
                 <select data-translator-item="current-key" id="translator-current-key" class="form-control mr-2"></select>
                 <button data-action="filter-items" class="btn btn-light btn-xs ml-2"><i class="fas fa-filter"></i> Filter items</button>
                 <button data-action="clear-filter" class="btn btn-xs btn-light ml-1"><i class="fas fa-times"></i></button>
+                <button data-action="view-code" class="btn btn-light btn-xs ml-3" disabled><i class="fa-solid fa-code"></i> View code</button>
             </div>
             <div class="form-inline">
                 <button data-action="save-changes" class="btn btn-xs btn-light"><i class="fas fa-save"></i> Save Changes</button>
@@ -150,6 +151,14 @@
                     <label class="custom-control-label" style="padding-top: 2px;" for="highlight-current">Highlight selected</label>
                 </div>
             </div>
+        </div>
+        <div class="in-screen-saving-cloak">
+            <p>
+                <i class="fas fa-spinner fa-spin fa-3x"></i>
+            </p>
+            <p>
+                Saving item &hellip;
+            </p>
         </div>
     </div>
 </div>
