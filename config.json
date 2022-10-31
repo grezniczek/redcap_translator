@@ -57,12 +57,14 @@
         "settings-update",
         "load-translation-data",
         "update-translation",
-        "set-dialog-coordinates"
+        "set-dialog-coordinates",
+        "save-changes"
     ],
     "no-auth-ajax-actions": [
         "load-translation-data",
         "update-translation",
-        "set-dialog-coordinates"
+        "set-dialog-coordinates",
+        "save-changes"
     ],
     "crons": [
         {
