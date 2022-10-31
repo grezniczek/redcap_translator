@@ -174,6 +174,18 @@ function setupTranslation(password = '') {
         else {
             errorMsg = response.error;
         }
+        // Add warning when user tries to move away with unsaved changes
+        window.addEventListener('beforeunload', function (e) {
+            if (isDirty()) {
+                // Cancel the event
+                e.preventDefault(); // If you prevent default behavior in Mozilla Firefox prompt will be allways shown
+                // Chrome requires returnValue to be set
+                e.returnValue = '';
+            }
+            else {
+                delete e['returnValue'];
+            }
+        })
     })
     .catch(function(err) {
         errorMsg = err;
@@ -801,17 +813,26 @@ function setDialogData() {
         $dialog.find('[data-inscreen-content="metadata-split"]').prop('checked', metadata.split);
         $dialog.find('[data-inscreen-content="metadata-do-not-translate"]').prop('checked', !metadata.translate);
         
-        
-        // @ts-ignore
-        currentHash = objectHash(getDialogData());
+        // Set initial hash
+        currentHash = getHash(getDialogData());
     }
     updateDialog();
+}
+
+/**
+ * Generates a hash value
+ * @param {any} obj 
+ * @returns {string} 
+ */
+function getHash(obj) {
+    // @ts-ignore Third-party lib
+    return objectHash(obj);
 }
 
 function isDirty() {
     if (currentHash == '') return false;
     // @ts-ignore
-    return currentHash != objectHash(getDialogData());
+    return currentHash != getHash(getDialogData());
 }
 
 /**
@@ -964,6 +985,7 @@ function saveChanges() {
     if (currentString == '') return;
     $saveCloak.show();
     const data = getDialogData();
+    const newHash = getHash(data);
     data['key'] = currentString;
     data['version'] = config.basedOn;
     data['language'] = config.name;
@@ -971,7 +993,9 @@ function saveChanges() {
     JSMO.ajax('save-changes', data)
     .then(response => {
         if (response.success) {
-
+            // Update hash
+            currentHash = newHash;
+            setSaveButtonState(false);
         }
         else {
             showError('Failed to save changes.', response.error);

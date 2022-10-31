@@ -241,41 +241,77 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         $strings = is_array($translation_file["strings"]) ? $translation_file["strings"] : [];
         $help_content = is_array($translation_file["help-content"]) ? $translation_file["help-content"] : [];
         #region Translation
-        $text = $payload["translationText"];
-        $new = [
-            "key" => $key,
-            "do-not-translate" => $payload["translationDoNotTranslate"],
-            "annotation" => $payload["translationAnnotation"],
-            "translations" => [
-                $string_metadata["hash"] => $text
-            ]
-        ];
-        $old = $strings[$key] ?? [
-            "key" => $key,
-            "do-not-translate" => false,
-            "annotation" => "",
-            "translations" => [
-                $string_metadata["hash"] => ""
-            ]
-        ];
-        if($new["translations"][$string_metadata["hash"]] != $old["translations"][$string_metadata["hash"]] || 
-           $new["do-not-translate"] != $old["do-not-translate"] || $new["annotation"] != $old["annotation"] || count($new["translations"]) != count($old["translations"])) {
-            // Update translation
-            // Merge existing (older) translations
-            foreach ($old["translations"] as $this_hash => $this_text) {
-                if ($this_hash != $string_metadata["hash"]) {
-                    $new["translations"][$this_hash] = $this_text;
+        $text = $payload["translationText"] ?? "";
+        try {
+            $new = [
+                "key" => $key,
+                "do-not-translate" => $payload["translationDoNotTranslate"],
+                "annotation" => $payload["translationAnnotation"],
+                "translations" => [
+                    $string_metadata["hash"] => $text
+                ]
+            ];
+            $old = $strings[$key] ?? [
+                "key" => $key,
+                "do-not-translate" => false,
+                "annotation" => "",
+                "translations" => [
+                    $string_metadata["hash"] => ""
+                ]
+            ];
+            if($new["translations"][$string_metadata["hash"]] != $old["translations"][$string_metadata["hash"]] || 
+               $new["do-not-translate"] != $old["do-not-translate"] || $new["annotation"] != $old["annotation"] || count($new["translations"]) != count($old["translations"])) {
+                // Update translation
+                // Merge existing (older) translations
+                foreach ($old["translations"] as $this_hash => $this_text) {
+                    if ($this_hash != $string_metadata["hash"]) {
+                        $new["translations"][$this_hash] = $this_text;
+                    }
                 }
+                $strings[$key] = $new;
+                $translation_file["timestamp"] = $this->get_current_timestamp();
+                $this->store_translation($translation_file, $strings, $help_content);
             }
-            $strings[$key] = $new;
-            $translation_file["timestamp"] = $this->get_current_timestamp();
-            $this->store_translation($translation_file, $strings, $help_content);
+        }
+        catch (\Throwable $ex) {
+            return $this->error_response("Failed to store translation: " . $ex->getMessage()); 
         }
         #endregion
         #region Metadata
-        
+        try {
+            $updated = [
+                "html" => $payload["metadataHTMLSupport"],
+                "split" => $payload["metadataSplit"],
+                "translate" => $payload["metadataDoNotTranslate"],
+                "annotation" => $payload["metadataAnnotation"],
+                "length-restricted" => $payload["metadataLengthRestricted"] === null ? null : ($payload["metadataLengthRestricted"] === false ? false : $payload["metadataLengthRestrictedPx"]),
+                "interpolation-hints" => $payload["metadataInterpolationHints"]
+            ];
+            // Check if updated and copy values
+            $identical = true;
+            foreach ($updated as $k => $v) {
+                if (is_array($v)) {
+                    foreach ($v as $sk => $sv) {
+                        $identical = $identical && $string_metadata[$k][$sk] === $sv;
+                        $string_metadata[$k][$sk] = $sv;
+                    }
+                }
+                else {
+                    $identical = $identical && $string_metadata[$k] === $v;
+                    $string_metadata[$k] = $v;
+                }
+            }
+            if (!$identical) {
+                // Store
+                $metadata_file["strings"][$key] = $string_metadata;
+                $this->store_metadata_file($metadata_file);
+            }
+        }
+        catch (\Throwable $ex) {
+            return $this->error_response("Failed to store metadata: " . $ex->getMessage());
+        }
         #endregion
-        return $this->error_response("Not implemented yet.");
+        return $this->success_response();
     }
 
     #endregion
