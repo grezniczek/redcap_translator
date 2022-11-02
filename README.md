@@ -2,6 +2,8 @@
 
 A REDCap External Module facilitating the translation of REDCap strings and the collection of metadata about them.
 
+See also: https://github.com/REDCap-German-User-Group/Translation/tree/main/Tools
+
 ## Requirements
 
 - REDCAP 12.5.9 or newer (Framework version 11+)
