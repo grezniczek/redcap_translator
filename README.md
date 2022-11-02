@@ -1,20 +1,20 @@
-# REDCap Translator
+# REDCap Translation Assistant
 
-A REDCap External Module facilitating localization of REDCap (Core and External Modules).
+A REDCap External Module facilitating the translation of REDCap strings and the collection of metadata about them.
 
 ## Requirements
 
-- REDCAP 8.1.0 or newer (tested with REDCap 8.11.11 and 9.0.0).
+- REDCAP 12.5.9 or newer (Framework version 11+)
 
 ## Installation
 
-- Clone this repo into `<redcap-root>/modules/redcap_translator_v<version-number>`.
-- Go to _Control Center > Technical / Developer Tools > External Modules_ and enable _REDCap Translator_.
+- Clone this repo into `<redcap-root>/modules/redcap_translation_assistant_v<version-number>`.
+- Go to _Control Center > Technical / Developer Tools > External Modules_ and enable _REDCap Translation Assistant_.
 
 ## Configuration
 
-- None so far. This will change.
+- (Documentation in progress)
 
 ## Effect
 
-- None. This is just a scaffold for now ;)
+- (Documentation in progress)
