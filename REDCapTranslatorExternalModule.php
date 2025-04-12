@@ -30,20 +30,6 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
 
     #endregion
 
-    #region Constructor and Instance Variables
-
-    /**
-     * @var InjectionHelper
-     */
-    public $ih = null;
- 
-    function __construct() {
-        parent::__construct();
-        $this->ih = InjectionHelper::init($this);
-    }
-
-    #endregion
-
     #region Hooks
 
     function redcap_module_link_check_display($project_id, $link) {
@@ -59,7 +45,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         return $link;
     }
 
-    function redcap_every_page_top($project_id = null) {
+    function redcap_every_page_top($project_id) {
         $page = defined("PAGE_FULL") ? PAGE_FULL : "";
         if ($page == "") return; // Should never be the case
         $this->inject_in_screen_code($page);
@@ -163,12 +149,17 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         if (array_key_exists($version, $store)) {
             $doc_id = $store[$version];
             $this->log("Deleted package version $version (doc_id = $doc_id).");
-            \Files::deleteFileByDocId($doc_id);
+            $this->deleteFileByDocId($doc_id);
             unset($store[$version]);
             $this->setSystemSetting(self::PACKAGES_SETTING_NAME, $store);
             return $this->success_response();
         }
         return $this->error_response("This version does not exist on the server.");
+    }
+
+    private function deleteFileByDocId($doc_id) {
+        $sql = "UPDATE redcap_edocs_metadata SET delete_date = ? WHERE doc_id = ? AND delete_date IS NULL";
+        return db_query($sql, [NOW, $doc_id]);
     }
 
     private function ajax_metadata_delete($payload, $user_id) {
@@ -453,7 +444,8 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         if (empty($current_translation["name"]) || empty($current_translation["based-on"])) return;
 
         $this->initializeJavascriptModuleObject();
-        $this->ih->js("in-screen/translator.js");
+        $ih = InjectionHelper::init($this);
+        $ih->js("in-screen/translator.js");
         // Prepare initialization object
         $settings = array(
             "debug" => $this->getSystemSetting(REDCapTranslatorExternalModule::DEBUG_SETTING_NAME) === true,
@@ -472,7 +464,7 @@ class REDCapTranslatorExternalModule extends \ExternalModules\AbstractExternalMo
         print "<script>\n\twindow.REDCap.EM.RUB.REDCapInScreenTranslator.init($json);\n</script>\n";
         require dirname(__FILE__)."/toasts.php";
         require dirname(__FILE__)."/floating.php";
-        $this->ih->css("in-screen/translator.css", true);
+        $ih->css("in-screen/translator.css", true);
     }
 
     private function get_dialog_coordinates() {
